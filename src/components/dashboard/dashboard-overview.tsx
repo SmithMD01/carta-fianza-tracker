@@ -3,8 +3,25 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Guarantee } from "@/types/guarantee";
+import { ColumnFilter } from "@/components/column-filter";
 
 type DashboardOverviewProps = { guarantees: Guarantee[] };
+
+type DashboardColumnFilters = {
+  guaranteeNumber: string;
+  entity: string;
+  projectName: string;
+  reason: string;
+  status: string;
+};
+
+const initialColumnFilters: DashboardColumnFilters = {
+  guaranteeNumber: "",
+  entity: "",
+  projectName: "",
+  reason: "",
+  status: "",
+};
 
 const questionOptions = [
   { value: "all", label: "Todas las cartas" },
@@ -33,15 +50,21 @@ function isNearExpiry(guarantee: Guarantee) {
   return isActive(guarantee) && (guarantee.renewalDays <= 60 || guarantee.status === "En renovación");
 }
 
+function matchesMultiFilter(value: string, filter: string) {
+  if (!filter) return true;
+  return filter.split("|").includes(value);
+}
+
 export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
   const [search, setSearch] = useState("");
   const [selectedYear, setSelectedYear] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedInsurer, setSelectedInsurer] = useState("all");
   const [selectedQuestion, setSelectedQuestion] = useState("all");
+  const [columnFilters, setColumnFilters] = useState<DashboardColumnFilters>(initialColumnFilters);
 
   const insurers = useMemo(() => [...new Set(guarantees.map((guarantee) => guarantee.insurerName))], [guarantees]);
   const years = useMemo(() => [...new Set(guarantees.map((guarantee) => guarantee.expiresAt.slice(0, 4)))], [guarantees]);
+  const statuses = useMemo(() => [...new Set(guarantees.map((guarantee) => guarantee.status))], [guarantees]);
 
   const filteredGuarantees = useMemo(() => {
     const normalizedSearch = search.toLowerCase().trim();
@@ -52,11 +75,29 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
 
       return matchesSearch &&
         (selectedYear === "all" || guarantee.expiresAt.startsWith(selectedYear)) &&
-        (selectedStatus === "all" || guarantee.status === selectedStatus) &&
         (selectedInsurer === "all" || guarantee.insurerName === selectedInsurer) &&
-        matchesQuestion(guarantee, selectedQuestion);
+        matchesQuestion(guarantee, selectedQuestion) &&
+        guarantee.guaranteeNumber.toLowerCase().includes(columnFilters.guaranteeNumber.toLowerCase()) &&
+        guarantee.entityName.toLowerCase().includes(columnFilters.entity.toLowerCase()) &&
+        guarantee.projectName.toLowerCase().includes(columnFilters.projectName.toLowerCase()) &&
+        guarantee.guaranteeReason.toLowerCase().includes(columnFilters.reason.toLowerCase()) &&
+        matchesMultiFilter(guarantee.status, columnFilters.status);
     });
-  }, [guarantees, search, selectedYear, selectedStatus, selectedInsurer, selectedQuestion]);
+  }, [guarantees, search, selectedYear, selectedInsurer, selectedQuestion, columnFilters]);
+
+  const updateColumnFilter = (field: keyof DashboardColumnFilters, value: string) => {
+    setColumnFilters((currentFilters) => ({ ...currentFilters, [field]: value }));
+  };
+
+  const clearAllFilters = () => {
+    setSearch("");
+    setSelectedYear("all");
+    setSelectedInsurer("all");
+    setSelectedQuestion("all");
+    setColumnFilters(initialColumnFilters);
+  };
+
+  const hasActiveFilters = search || selectedYear !== "all" || selectedInsurer !== "all" || selectedQuestion !== "all" || Object.values(columnFilters).some(Boolean);
 
   const insurerSummary = useMemo(() => {
     return insurers.map((insurer) => ({
@@ -124,18 +165,39 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
         <header className="border-b border-border px-5 py-4">
           <h2 className="text-base font-bold text-foreground">Resumen de cartas fianza</h2>
           <p className="mt-1 text-sm text-muted">Vista simplificada con los mismos filtros del módulo completo</p>
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar carta, entidad u obra..." className={`${inputClassName} xl:col-span-2`} />
-            <select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)} className={inputClassName}><option value="all">Todos los años</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select>
-            <select value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value)} className={inputClassName}><option value="all">Todos los estados</option><option value="Activo">Activo</option><option value="Por vencer">Por vencer</option><option value="En renovación">En renovación</option><option value="Renovada">Renovada</option><option value="Devuelto">Devuelto</option></select>
-            <select value={selectedInsurer} onChange={(event) => setSelectedInsurer(event.target.value)} className={inputClassName}><option value="all">Todas las aseguradoras</option>{insurers.map((insurer) => <option key={insurer} value={insurer}>{insurer}</option>)}</select>
-            <select value={selectedQuestion} onChange={(event) => setSelectedQuestion(event.target.value)} className={`${inputClassName} md:col-span-2 xl:col-span-2`}>{questionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+          <div className="mt-4 grid gap-4 xl:grid-cols-3">
+            <div className="space-y-3 xl:col-span-2">
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar carta, entidad u obra..." className={`${inputClassName} w-full`} />
+              <select value={selectedQuestion} onChange={(event) => setSelectedQuestion(event.target.value)} className={`${inputClassName} w-full`}>{questionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+            </div>
+            <div className="space-y-3 xl:col-span-1">
+              <select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)} className={`${inputClassName} w-full`}><option value="all">Todos los años</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select>
+              <select value={selectedInsurer} onChange={(event) => setSelectedInsurer(event.target.value)} className={`${inputClassName} w-full`}><option value="all">Todas las aseguradoras</option>{insurers.map((insurer) => <option key={insurer} value={insurer}>{insurer}</option>)}</select>
+            </div>
+          </div>
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              disabled={!hasActiveFilters}
+              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Limpiar filtros
+            </button>
           </div>
         </header>
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1050px] text-sm">
-            <thead className="bg-surface-muted text-left text-[11px] uppercase tracking-wide text-muted"><tr>{["#", "N.° carta fianza", "Entidad", "Obra referencial", "Concepto / detalle", "Estado", "Valor carta", "Vencimiento", "Días restantes"].map((heading) => <th key={heading} className="px-4 py-3">{heading}</th>)}</tr></thead>
+            <thead className="bg-surface-muted text-left text-[11px] uppercase tracking-wide text-muted"><tr>
+              <th className="px-4 py-3">#</th>
+              <th className="px-4 py-3">N.° carta fianza <ColumnFilter label="número de carta" value={columnFilters.guaranteeNumber} onChange={(value) => updateColumnFilter("guaranteeNumber", value)} /></th>
+              <th className="px-4 py-3">Entidad <ColumnFilter label="entidad" value={columnFilters.entity} onChange={(value) => updateColumnFilter("entity", value)} /></th>
+              <th className="px-4 py-3">Obra referencial <ColumnFilter label="obra" value={columnFilters.projectName} onChange={(value) => updateColumnFilter("projectName", value)} /></th>
+              <th className="px-4 py-3">Concepto / detalle <ColumnFilter label="concepto" value={columnFilters.reason} onChange={(value) => updateColumnFilter("reason", value)} /></th>
+              <th className="px-4 py-3">Estado <ColumnFilter label="estado" value={columnFilters.status} onChange={(value) => updateColumnFilter("status", value)} options={statuses} multiple /></th>
+              <th className="px-4 py-3">Valor carta</th><th className="px-4 py-3">Vencimiento</th><th className="px-4 py-3">Días restantes</th>
+            </tr></thead>
             <tbody className="divide-y divide-border">
               {orderedGuarantees.map((guarantee, index) => <tr key={guarantee.id} className={isActive(guarantee) ? "bg-emerald-50/50" : "hover:bg-surface-muted"}><td className="px-4 py-3 text-muted">{String(index + 1).padStart(2, "0")}</td><td className="px-4 py-3 font-semibold">{guarantee.guaranteeNumber}</td><td className="px-4 py-3 font-semibold">{guarantee.entityName}</td><td className="px-4 py-3 font-semibold">{guarantee.projectName}</td><td className="px-4 py-3 text-muted">{guarantee.guaranteeReason}</td><td className="px-4 py-3"><span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">{guarantee.status}</span></td><td className="whitespace-nowrap px-4 py-3 font-semibold">S/ {guarantee.guaranteeValue.toLocaleString("es-PE")}</td><td className="whitespace-nowrap px-4 py-3 text-muted">{guarantee.expiresAt}</td><td className="px-4 py-3 text-muted">{guarantee.renewalDays} días</td></tr>)}
               {filteredGuarantees.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted">No hay cartas para los filtros seleccionados.</td></tr>}

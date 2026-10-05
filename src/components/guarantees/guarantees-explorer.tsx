@@ -3,9 +3,52 @@
 import { useMemo, useState } from "react";
 import type { Guarantee } from "@/types/guarantee";
 import { GuaranteeEditModal } from "@/components/guarantees/guarantee-edit-modal";
+import { ColumnFilter } from "@/components/column-filter";
 
 type GuaranteesExplorerProps = {
   guarantees: Guarantee[];
+};
+
+type ColumnFilters = {
+  project: string;
+  projectName: string;
+  insurer: string;
+  guaranteeNumber: string;
+  reason: string;
+  status: string;
+  requestStatus: string;
+  guaranteeValue: string;
+  projectValue: string;
+  premium: string;
+  premiumPercentage: string;
+  collateral: string;
+  collateralPercentage: string;
+  validFrom: string;
+  expiresAt: string;
+  renewalDays: string;
+  guaranteeStage: string;
+  projectStage: string;
+};
+
+const initialColumnFilters: ColumnFilters = {
+  project: "",
+  projectName: "",
+  insurer: "",
+  guaranteeNumber: "",
+  reason: "",
+  status: "",
+  requestStatus: "",
+  guaranteeValue: "",
+  projectValue: "",
+  premium: "",
+  premiumPercentage: "",
+  collateral: "",
+  collateralPercentage: "",
+  validFrom: "",
+  expiresAt: "",
+  renewalDays: "",
+  guaranteeStage: "",
+  projectStage: "",
 };
 
 const questionOptions = [
@@ -39,14 +82,19 @@ function matchesQuestion(guarantee: Guarantee, question: string) {
   return searchableText.includes(question);
 }
 
+function matchesMultiFilter(value: string, filter: string) {
+  if (!filter) return true;
+  return filter.split("|").includes(value);
+}
+
 export function GuaranteesExplorer({
   guarantees,
 }: GuaranteesExplorerProps) {
   const [search, setSearch] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedInsurer, setSelectedInsurer] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
   const [selectedQuery, setSelectedQuery] = useState("all");
+  const [columnFilters, setColumnFilters] = useState<ColumnFilters>(initialColumnFilters);
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -60,6 +108,11 @@ export function GuaranteesExplorer({
     ),
   ];
 
+  const statuses = [...new Set(guarantees.map((guarantee) => guarantee.status))];
+  const requestStatuses = [...new Set(guarantees.map((guarantee) => guarantee.requestStatus))];
+  const guaranteeStages = [...new Set(guarantees.map((guarantee) => guarantee.guaranteeStage))];
+  const projectStages = [...new Set(guarantees.map((guarantee) => guarantee.projectStage))];
+
   const filteredGuarantees = useMemo(() => {
     const normalizedSearch = search.toLowerCase().trim();
 
@@ -71,10 +124,6 @@ export function GuaranteesExplorer({
         guarantee.insurerName.toLowerCase().includes(normalizedSearch) ||
         guarantee.guaranteeNumber.toLowerCase().includes(normalizedSearch);
 
-      const matchesStatus =
-        selectedStatus === "all" ||
-        guarantee.status === selectedStatus;
-
       const matchesInsurer =
         selectedInsurer === "all" ||
         guarantee.insurerName === selectedInsurer;
@@ -84,23 +133,56 @@ export function GuaranteesExplorer({
         guarantee.expiresAt.startsWith(selectedYear);
 
       const matchesQuery = matchesQuestion(guarantee, selectedQuery);
+      const matchesColumnFilters =
+        `${guarantee.projectCode} ${guarantee.projectCui}`.toLowerCase().includes(columnFilters.project.toLowerCase()) &&
+        guarantee.projectName.toLowerCase().includes(columnFilters.projectName.toLowerCase()) &&
+        matchesMultiFilter(guarantee.insurerName, columnFilters.insurer) &&
+        guarantee.guaranteeNumber.toLowerCase().includes(columnFilters.guaranteeNumber.toLowerCase()) &&
+        guarantee.guaranteeReason.toLowerCase().includes(columnFilters.reason.toLowerCase()) &&
+        matchesMultiFilter(guarantee.status, columnFilters.status) &&
+        matchesMultiFilter(guarantee.requestStatus, columnFilters.requestStatus) &&
+        String(guarantee.guaranteeValue).includes(columnFilters.guaranteeValue) &&
+        String(guarantee.projectValue).includes(columnFilters.projectValue) &&
+        String(guarantee.premium).includes(columnFilters.premium) &&
+        String(guarantee.premiumPercentage).includes(columnFilters.premiumPercentage) &&
+        String(guarantee.collateral).includes(columnFilters.collateral) &&
+        String(guarantee.collateralPercentage).includes(columnFilters.collateralPercentage) &&
+        guarantee.validFrom.includes(columnFilters.validFrom) &&
+        guarantee.expiresAt.includes(columnFilters.expiresAt) &&
+        String(guarantee.renewalDays).includes(columnFilters.renewalDays) &&
+        matchesMultiFilter(guarantee.guaranteeStage, columnFilters.guaranteeStage) &&
+        matchesMultiFilter(guarantee.projectStage, columnFilters.projectStage);
 
       return (
         matchesSearch &&
-        matchesStatus &&
         matchesInsurer &&
         matchesYear &&
-        matchesQuery
+        matchesQuery &&
+        matchesColumnFilters
       );
     });
   }, [
     guarantees,
     search,
-    selectedStatus,
     selectedInsurer,
     selectedYear,
     selectedQuery,
+    columnFilters,
   ]);
+
+  const updateColumnFilter = (field: keyof ColumnFilters, value: string) => {
+    setColumnFilters((currentFilters) => ({ ...currentFilters, [field]: value }));
+  };
+
+  const clearAllFilters = () => {
+    setSearch("");
+    setSelectedYear("all");
+    setSelectedInsurer("all");
+    setSelectedQuery("all");
+    setColumnFilters(initialColumnFilters);
+  };
+
+  const hasActiveFilters = search || selectedYear !== "all" || selectedInsurer !== "all" || selectedQuery !== "all" || Object.values(columnFilters).some(Boolean);
 
   const totalPages = Math.max(1, Math.ceil(filteredGuarantees.length / pageSize));
   const visiblePage = Math.min(currentPage, totalPages);
@@ -161,73 +243,31 @@ export function GuaranteesExplorer({
           Filtros de búsqueda
         </h2>
 
-        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar por proyecto, entidad o carta..."
-            className="min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary md:col-span-2 xl:col-span-2"
-          />
-
-          <select
-            value={selectedYear}
-            onChange={(event) => setSelectedYear(event.target.value)}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
-          >
-            <option value="all">Todos los años</option>
-
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={selectedStatus}
-            onChange={(event) => setSelectedStatus(event.target.value)}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
-          >
-            <option value="all">Todos los estados</option>
-            <option value="Activo">Activo</option>
-            <option value="Por vencer">Por vencer</option>
-            <option value="Vencido">Vencido</option>
-            <option value="Devuelto">Devuelto</option>
-          </select>
-
-          <select
-            value={selectedInsurer}
-            onChange={(event) => setSelectedInsurer(event.target.value)}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
-          >
-            <option value="all">Todas las aseguradoras</option>
-
-            {insurers.map((insurer) => (
-              <option key={insurer} value={insurer}>
-                {insurer}
-              </option>
-            ))}
-          </select>
-
-          <div className="flex min-w-0 items-center gap-2 md:col-span-2 xl:col-span-2">
-            <label htmlFor="question-filter" className="shrink-0 text-sm font-semibold text-foreground">
-              Responder pregunta:
-            </label>
-            <select
-              id="question-filter"
-              value={selectedQuery}
-              onChange={(event) => setSelectedQuery(event.target.value)}
-              className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
-            >
-              <option value="all">Selecciona una consulta para filtrar</option>
-              {questionOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+        <div className="mt-3 grid gap-4 xl:grid-cols-3">
+          <div className="space-y-3 xl:col-span-2">
+            <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por proyecto, entidad o carta..." className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary" />
+            <div className="flex min-w-0 items-center gap-3">
+              <label htmlFor="question-filter" className="shrink-0 text-sm font-semibold text-foreground">Responder pregunta:</label>
+              <select id="question-filter" value={selectedQuery} onChange={(event) => setSelectedQuery(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary">
+                <option value="all">Selecciona una consulta para filtrar</option>
+                {questionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </div>
           </div>
+          <div className="space-y-3 xl:col-span-1">
+            <select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"><option value="all">Todos los años</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select>
+            <select value={selectedInsurer} onChange={(event) => setSelectedInsurer(event.target.value)} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"><option value="all">Todas las aseguradoras</option>{insurers.map((insurer) => <option key={insurer} value={insurer}>{insurer}</option>)}</select>
+          </div>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            onClick={clearAllFilters}
+            disabled={!hasActiveFilters}
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Limpiar filtros
+          </button>
         </div>
       </section>
 
@@ -239,24 +279,24 @@ export function GuaranteesExplorer({
                 <thead className="bg-surface-muted">
                     <tr>
                         <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">N°</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Codigo P. / CUI</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Obra / Entidad</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Aseguradora</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">N° Carta Fianza</th>
-                        <th className="px-6 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Motivo Carta</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Valor CF</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Valor Proyecto</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Prima</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">% Prima</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Encaje</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">% Encaje</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Fecha Vigencia</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Fecha Vencimiento</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Dias Renovar</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Estado</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Solicitud</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Etapa CF</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Etapa Proyecto</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Código P. / CUI <ColumnFilter label="proyecto" value={columnFilters.project} onChange={(value) => updateColumnFilter("project", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Obra / Entidad <ColumnFilter label="obra" value={columnFilters.projectName} onChange={(value) => updateColumnFilter("projectName", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Aseguradora <ColumnFilter label="aseguradora" value={columnFilters.insurer} onChange={(value) => updateColumnFilter("insurer", value)} options={insurers} multiple /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">N.° Carta Fianza <ColumnFilter label="número de carta" value={columnFilters.guaranteeNumber} onChange={(value) => updateColumnFilter("guaranteeNumber", value)} /></th>
+                        <th className="px-6 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Motivo Carta <ColumnFilter label="motivo" value={columnFilters.reason} onChange={(value) => updateColumnFilter("reason", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Valor CF <ColumnFilter label="valor CF" value={columnFilters.guaranteeValue} onChange={(value) => updateColumnFilter("guaranteeValue", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Valor Proyecto <ColumnFilter label="valor proyecto" value={columnFilters.projectValue} onChange={(value) => updateColumnFilter("projectValue", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Prima <ColumnFilter label="prima" value={columnFilters.premium} onChange={(value) => updateColumnFilter("premium", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">% Prima <ColumnFilter label="porcentaje de prima" value={columnFilters.premiumPercentage} onChange={(value) => updateColumnFilter("premiumPercentage", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Encaje <ColumnFilter label="encaje" value={columnFilters.collateral} onChange={(value) => updateColumnFilter("collateral", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">% Encaje <ColumnFilter label="porcentaje de encaje" value={columnFilters.collateralPercentage} onChange={(value) => updateColumnFilter("collateralPercentage", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Fecha Vigencia <ColumnFilter label="fecha de vigencia" value={columnFilters.validFrom} onChange={(value) => updateColumnFilter("validFrom", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Fecha Vencimiento <ColumnFilter label="fecha de vencimiento" value={columnFilters.expiresAt} onChange={(value) => updateColumnFilter("expiresAt", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Días renovar <ColumnFilter label="días para renovar" value={columnFilters.renewalDays} onChange={(value) => updateColumnFilter("renewalDays", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Estado <ColumnFilter label="estado" value={columnFilters.status} onChange={(value) => updateColumnFilter("status", value)} options={statuses} multiple /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Solicitud <ColumnFilter label="solicitud" value={columnFilters.requestStatus} onChange={(value) => updateColumnFilter("requestStatus", value)} options={requestStatuses} multiple /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Etapa CF <ColumnFilter label="etapa CF" value={columnFilters.guaranteeStage} onChange={(value) => updateColumnFilter("guaranteeStage", value)} options={guaranteeStages} multiple /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Etapa Proyecto <ColumnFilter label="etapa de proyecto" value={columnFilters.projectStage} onChange={(value) => updateColumnFilter("projectStage", value)} options={projectStages} multiple /></th>
                         <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Acciones</th>
                     </tr>
                       </thead>
