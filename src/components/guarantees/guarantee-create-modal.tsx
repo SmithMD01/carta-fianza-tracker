@@ -123,7 +123,7 @@ export function GuaranteeCreateModal({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+        className="inline-flex h-10 min-w-[165px] items-center justify-center whitespace-nowrap rounded-lg bg-primary px-3 text-sm font-medium text-white hover:bg-primary-dark"
       >
         Agregar Carta Fianza
       </button>

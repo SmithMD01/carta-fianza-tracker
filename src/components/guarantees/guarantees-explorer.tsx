@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Guarantee } from "@/types/guarantee";
+import { GuaranteeEditModal } from "@/components/guarantees/guarantee-edit-modal";
 
 type GuaranteesExplorerProps = {
   guarantees: Guarantee[];
@@ -14,6 +15,9 @@ export function GuaranteesExplorer({
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedInsurer, setSelectedInsurer] = useState("all");
   const [selectedYear, setSelectedYear] = useState("all");
+  const [selectedQuery, setSelectedQuery] = useState("all");
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const insurers = [
     ...new Set(guarantees.map((guarantee) => guarantee.insurerName)),
@@ -48,11 +52,15 @@ export function GuaranteesExplorer({
         selectedYear === "all" ||
         guarantee.expiresAt.startsWith(selectedYear);
 
+      const matchesQuery =
+        selectedQuery === "all" || guarantee.status === selectedQuery;
+
       return (
         matchesSearch &&
         matchesStatus &&
         matchesInsurer &&
-        matchesYear
+        matchesYear &&
+        matchesQuery
       );
     });
   }, [
@@ -61,11 +69,24 @@ export function GuaranteesExplorer({
     selectedStatus,
     selectedInsurer,
     selectedYear,
+    selectedQuery,
   ]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredGuarantees.length / pageSize));
+  const visiblePage = Math.min(currentPage, totalPages);
+  const paginatedGuarantees = filteredGuarantees.slice(
+    (visiblePage - 1) * pageSize,
+    visiblePage * pageSize,
+  );
+
+  const firstVisibleRow = filteredGuarantees.length === 0
+    ? 0
+    : (visiblePage - 1) * pageSize + 1;
+  const lastVisibleRow = Math.min(visiblePage * pageSize, filteredGuarantees.length);
 
 
   return (
-    <div className="mt-8">
+    <div className="mt-6">
 
       {/* <section className="mt-4 mb-4 grid gap-4 md:grid-cols-2">
         <div className="rounded-lg border border-border bg-surface px-4 py-3">
@@ -99,13 +120,13 @@ export function GuaranteesExplorer({
           Filtros de búsqueda
         </h2>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <input
             type="search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Buscar por proyecto, entidad o carta..."
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
+            className="min-w-0 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary md:col-span-2 xl:col-span-2"
           />
 
           <select
@@ -123,6 +144,18 @@ export function GuaranteesExplorer({
           </select>
 
           <select
+            value={selectedStatus}
+            onChange={(event) => setSelectedStatus(event.target.value)}
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="Activo">Activo</option>
+            <option value="Por vencer">Por vencer</option>
+            <option value="Vencido">Vencido</option>
+            <option value="Devuelto">Devuelto</option>
+          </select>
+
+          <select
             value={selectedInsurer}
             onChange={(event) => setSelectedInsurer(event.target.value)}
             className="rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
@@ -135,27 +168,30 @@ export function GuaranteesExplorer({
               </option>
             ))}
           </select>
+
+          <div className="flex min-w-0 items-center gap-2 md:col-span-2 xl:col-span-2">
+            <label htmlFor="question-filter" className="shrink-0 text-sm font-semibold text-foreground">
+              Responder pregunta:
+            </label>
+            <select
+              id="question-filter"
+              value={selectedQuery}
+              onChange={(event) => setSelectedQuery(event.target.value)}
+              className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
+            >
+              <option value="all">Selecciona una consulta para filtrar</option>
+              <option value="Activo">Cartas Fianza activas</option>
+              <option value="Por vencer">Cartas Fianza por vencer</option>
+              <option value="Vencido">Cartas Fianza vencidas</option>
+              <option value="Devuelto">Cartas Fianza devueltas</option>
+            </select>
+          </div>
         </div>
       </section>
 
       {
 
-        <section className="mt-8 rounded-xl border border-border bg-surface">
-          <section className="mt-4 mb-4 ml-4 mr-4 flex rounded-xl border border-border bg-surface-muted px-5 py-4 md:flex-row md:items-center">
-              <h2 className="text-sm font-semibold text-foreground">Responder Pregunta: </h2>
-              
-              <select
-                value={selectedStatus}
-                onChange={(event) => setSelectedStatus(event.target.value)}
-                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
-              >
-                <option value="all">Selecciona una consulta para filtrar</option>
-                <option value="Activo">Cartas Fianza por Renovar</option>
-                <option value="Por vencer">Cartas Fianza por Vencer</option>
-                <option value="Vencido">Cartas Fianza Vencidas</option>
-                <option value="Devuelto">Cartas Fianza Devueltas</option>
-              </select>
-          </section>
+        <section className="mt-5 rounded-xl border border-border bg-surface">
             <section className="overflow-x-auto">
               <table className="min-w-[1600px] divide-y divide-border text-xs leading-5">
                 <thead className="bg-surface-muted">
@@ -184,9 +220,9 @@ export function GuaranteesExplorer({
                       </thead>
 
                       <tbody className="bg-surface divide-y divide-border">
-                          {filteredGuarantees.map((guarantee, index) => (
+                          {paginatedGuarantees.map((guarantee, index) => (
                       <tr key={guarantee.id} className="hover:bg-surface-muted">
-                          <td className="px-3 py-2">{index + 1}</td>
+                          <td className="px-3 py-2">{(visiblePage - 1) * pageSize + index + 1}</td>
                           <td className="px-3 py-2 text-xs">
                             <div className="font-semibold text-foreground">{guarantee.projectCode}</div>
                             <div className="text-muted"><em>{guarantee.projectCui}</em></div>                            
@@ -211,11 +247,56 @@ export function GuaranteesExplorer({
                           <td className="px-3 py-2 text-xs">{guarantee.requestStatus}</td>
                           <td className="px-3 py-2 text-xs">{guarantee.guaranteeStage}</td>
                           <td className="px-3 py-2 text-xs">{guarantee.projectStage}</td>
+                          <td className="px-3 py-2 text-xs">
+                            <GuaranteeEditModal guarantee={guarantee} />
+                          </td>
                       </tr>
                     ))}
                 </tbody>
               </table>
             </section>
+            <footer className="flex flex-col gap-3 border-t border-border px-4 py-3 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
+              <p>
+                {filteredGuarantees.length === 0
+                  ? "No hay registros para mostrar"
+                  : `Mostrando ${firstVisibleRow}-${lastVisibleRow} de ${filteredGuarantees.length} registros`}
+              </p>
+
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <label htmlFor="page-size" className="whitespace-nowrap">
+                  Filas por página:
+                </label>
+                <select
+                  id="page-size"
+                  value={pageSize}
+                  onChange={(event) => setPageSize(Number(event.target.value))}
+                  className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={30}>30</option>
+                </select>
+                <button
+                  type="button"
+                  disabled={visiblePage === 1}
+                  onClick={() => setCurrentPage((page) => Math.max(1, Math.min(page, totalPages) - 1))}
+                  className="rounded-lg border border-border px-3 py-1.5 text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Anterior
+                </button>
+                <span className="whitespace-nowrap text-foreground">
+                  Página {visiblePage} de {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={visiblePage === totalPages}
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, Math.min(page, totalPages) + 1))}
+                  className="rounded-lg border border-border px-3 py-1.5 text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Siguiente
+                </button>
+              </div>
+            </footer>
         </section>
       }
     </div>

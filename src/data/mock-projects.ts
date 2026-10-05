@@ -31,7 +31,7 @@ export const mockProjects: Project[] = [
     wonWith: "Obras del Centro S.A.C.",
     projectStage: "Liquidación",
     activeGuarantees: 1,
-    status: "En liquidación",
+    status: "Liquidación",
   },
   {
     id: "3",
@@ -47,7 +47,7 @@ export const mockProjects: Project[] = [
     wonWith: "Ingeniería del Sur S.A.C.",
     projectStage: "Liquidación",
     activeGuarantees: 0,
-    status: "En liquidación",
+    status: "Liquidación",
   },
   {
     id: "4",
