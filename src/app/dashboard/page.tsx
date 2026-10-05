@@ -1,38 +1,16 @@
+import { DashboardOverview } from "@/components/dashboard/dashboard-overview";
+import { mockGuarantees } from "@/data/mock-guarantees";
+
 export default function DashboardPage() {
-    return (
-        <section>
-            <p className="text-sm font-medium text-primary">
-                Vista Principal
-            </p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight">Dashboard</h2>
+  return (
+    <section>
+      <p className="text-sm font-medium text-primary">Vista principal</p>
+      <h1 className="mt-1 text-3xl font-bold tracking-tight">Dashboard</h1>
+      <p className="mt-1 text-sm text-muted">
+        Resumen operativo del seguimiento de cartas fianza.
+      </p>
 
-            <p className="mt-2 text-sm text-muted">
-                Resumen del seguimiento de Cartas Fianza.
-            </p>
-
-            <div className="mt-8 grid gap-4 md:grid-cols-4">
-                <div className="rounded-xl bg-white p-5 shadow-md">
-                    <p className="text-sm text-slate-500">Cartas Fianza</p>
-                    <p className="mt-2 text-3xl font-semibold">0</p>
-                </div>
-
-                <div className="rounded-xl bg-white p-5 shadow-md">
-                    <p className="text-sm text-slate-500">Cartas activas</p>
-                    <p className="mt-2 text-3xl font-semibold">0</p>
-                </div>
-
-                <div className="rounded-xl bg-white p-5 shadow-md">
-                    <p className="text-sm text-slate-500">Próximas a vencer</p>
-                    <p className="mt-2 text-3xl font-semibold">0</p>
-                </div>
-
-                <div className="rounded-xl bg-white p-5 shadow-md">
-                    <p className="text-sm text-slate-500">Encaje por Recuperar</p>
-                    <p className="mt-2 text-3xl font-semibold">0</p>
-                </div>
-
-
-            </div>
-        </section>
-    );
+      <DashboardOverview guarantees={mockGuarantees} />
+    </section>
+  );
 }

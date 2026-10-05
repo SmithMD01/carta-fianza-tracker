@@ -8,6 +8,37 @@ type GuaranteesExplorerProps = {
   guarantees: Guarantee[];
 };
 
+const questionOptions = [
+  { value: "convenio", label: "Cartas para firma de convenio" },
+  { value: "adenda", label: "Cartas para firma de adenda" },
+  { value: "por-vencer", label: "Cartas próximas a renovar" },
+  { value: "encaje-pendiente", label: "¿Cuánto encaje pendiente hay?" },
+];
+
+function matchesQuestion(guarantee: Guarantee, question: string) {
+  if (question === "all") return true;
+  if (question === "por-vencer") {
+    return ["Activo", "Por vencer", "En renovación"].includes(guarantee.status) && guarantee.renewalDays <= 60;
+  }
+  if (question === "encaje-pendiente") {
+    return guarantee.projectStage === "Liquidación" && guarantee.status === "Devuelto";
+  }
+
+  const searchableText = [
+    guarantee.guaranteeReason,
+    guarantee.guaranteeStage,
+    guarantee.requestedStage,
+    guarantee.requestStatus,
+    guarantee.observations,
+  ]
+    .join(" ")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  return searchableText.includes(question);
+}
+
 export function GuaranteesExplorer({
   guarantees,
 }: GuaranteesExplorerProps) {
@@ -52,8 +83,7 @@ export function GuaranteesExplorer({
         selectedYear === "all" ||
         guarantee.expiresAt.startsWith(selectedYear);
 
-      const matchesQuery =
-        selectedQuery === "all" || guarantee.status === selectedQuery;
+      const matchesQuery = matchesQuestion(guarantee, selectedQuery);
 
       return (
         matchesSearch &&
@@ -74,7 +104,10 @@ export function GuaranteesExplorer({
 
   const totalPages = Math.max(1, Math.ceil(filteredGuarantees.length / pageSize));
   const visiblePage = Math.min(currentPage, totalPages);
-  const paginatedGuarantees = filteredGuarantees.slice(
+  const orderedGuarantees = selectedQuery === "por-vencer"
+    ? [...filteredGuarantees].sort((a, b) => a.renewalDays - b.renewalDays)
+    : filteredGuarantees;
+  const paginatedGuarantees = orderedGuarantees.slice(
     (visiblePage - 1) * pageSize,
     visiblePage * pageSize,
   );
@@ -83,39 +116,47 @@ export function GuaranteesExplorer({
     ? 0
     : (visiblePage - 1) * pageSize + 1;
   const lastVisibleRow = Math.min(visiblePage * pageSize, filteredGuarantees.length);
+  const totalFilteredValue = filteredGuarantees.reduce(
+    (total, guarantee) => total + guarantee.guaranteeValue,
+    0,
+  );
+  const totalPendingCollateral = filteredGuarantees.reduce(
+    (total, guarantee) => total + guarantee.collateral,
+    0,
+  );
+  const summaryAmount = selectedQuery === "encaje-pendiente"
+    ? totalPendingCollateral
+    : totalFilteredValue;
+  const summaryLabel = selectedQuery === "encaje-pendiente"
+    ? "Encaje pendiente"
+    : "Valor de cartas";
 
 
   return (
     <div className="mt-6">
 
-      {/* <section className="mt-4 mb-4 grid gap-4 md:grid-cols-2">
-        <div className="rounded-lg border border-border bg-surface px-4 py-3">
-          <p className="text-xs font-medium uppercase text-muted">
-            Registros visibles
-          </p>
-
-          <p className="mt-1 text-2xl font-bold text-primary">
-            {filteredGuarantees.length}
-          </p>
-        </div>
-
-        <div className="rounded-lg border border-border bg-surface px-4 py-3">
-          <p className="text-xs font-medium uppercase text-muted">
-            Valor de cartas
-          </p>
-
-          <p className="mt-1 text-2xl font-bold text-primary">
-            S/{" "}
-            {totalValue.toLocaleString("es-PE", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </p>
-        </div>
-      </section> */}
-      
-
       <section className="rounded-xl border border-border bg-surface-muted px-5 py-4">
+        <h2 className="text-sm font-semibold text-foreground">Resumen de resultados</h2>
+        <p className="mt-1 text-sm text-muted">Los indicadores se actualizan según los filtros seleccionados.</p>
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <div className="rounded-lg bg-surface px-4 py-3">
+            <p className="text-sm font-medium text-foreground">Registros visibles</p>
+            <p className="mt-1 text-2xl font-bold text-primary">{filteredGuarantees.length}</p>
+            <p className="mt-1 text-sm text-muted">Cartas que coinciden con la consulta</p>
+          </div>
+          <div className="rounded-lg bg-surface px-4 py-3">
+            <p className="text-sm font-medium text-foreground">{summaryLabel}</p>
+            <p className="mt-1 text-2xl font-bold text-primary">
+              S/ {summaryAmount.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              {selectedQuery === "encaje-pendiente" ? "Pendiente de recuperación" : "Suma del resultado filtrado"}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-5 rounded-xl border border-border bg-surface-muted px-5 py-4">
         <h2 className="text-sm font-semibold text-foreground">
           Filtros de búsqueda
         </h2>
@@ -180,10 +221,11 @@ export function GuaranteesExplorer({
               className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary"
             >
               <option value="all">Selecciona una consulta para filtrar</option>
-              <option value="Activo">Cartas Fianza activas</option>
-              <option value="Por vencer">Cartas Fianza por vencer</option>
-              <option value="Vencido">Cartas Fianza vencidas</option>
-              <option value="Devuelto">Cartas Fianza devueltas</option>
+              {questionOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type { Project } from "@/types/project";
 
 type ProjectsTableProps = {
@@ -62,6 +63,7 @@ export function ProjectsTable({ projects }: ProjectsTableProps) {
                 "Entidad financiera",
                 "Cartas activas",
                 "Estado",
+                "Acciones",
               ].map((heading) => (
                 <th key={heading} className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-muted">
                   {heading}
@@ -74,7 +76,9 @@ export function ProjectsTable({ projects }: ProjectsTableProps) {
             {filteredProjects.map((project) => (
               <tr key={project.id} className="hover:bg-surface-muted">
                 <td className="px-6 py-4">
-                  <div className="font-semibold text-foreground">{project.projectCode}</div>
+                  <Link href={`/proyectos/${project.id}`} className="font-semibold text-primary hover:underline">
+                    {project.projectCode}
+                  </Link>
                   <div className="text-sm text-muted"><em>{project.cui}</em></div>
                 </td>
                 <td className="max-w-[220px] px-6 py-4 font-semibold text-foreground">{project.referenceName}</td>
@@ -87,6 +91,14 @@ export function ProjectsTable({ projects }: ProjectsTableProps) {
                   </span>
                 </td>
                 <td className="px-6 py-4 text-muted">{project.status}</td>
+                <td className="px-6 py-4">
+                  <Link
+                    href={`/proyectos/${project.id}`}
+                    className="inline-flex whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft"
+                  >
+                    Ver detalle
+                  </Link>
+                </td>
               </tr>
             ))}
 

@@ -23,27 +23,6 @@ export default function CartasFianzaPage() {
             </header>
 
 
-            <section className="mt-6 rounded-xl border border-border bg-surface-muted px-5 py-4">
-                <h2 className="text-sm font-semibold text-foreground">Resumen de Resultados</h2>
-
-                <p className="mt-1 text-sm text-muted">Selecciona una pregunta para filtrar la información</p>
-
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    <div className="rounded-lg bg-surface px-4 py-3">
-                        <p className="text-sm font-medium text-foreground">Registros Visibles</p>
-                        <p className="mt-1 text-2xl font-bold text-primary">{mockGuarantees.length}</p>
-                        <p className="mt-1 text-sm text-muted">Registros encontrados</p>
-                    </div>
-
-                    <div className="rounded-lg bg-surface px-4 py-3">
-                        <p className="text-sm font-medium text-foreground">Valor de Cartas</p>
-                        <p className="mt-1 text-2xl font-bold text-primary">S/{mockGuarantees.reduce((total, guarantee) => total + guarantee.guaranteeValue, 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                        <p className="mt-1 text-sm text-muted">Valor total registrado</p>   
-                    </div>
-                </div>
-
-            </section>
-
             <GuaranteesExplorer guarantees={mockGuarantees} />
 
         </section>

@@ -55,7 +55,7 @@ export function AppShell({ children }: AppShellProps) {
     <div className="min-h-screen bg-background text-foreground">
       <div className="flex min-h-screen">
         <aside
-          className={`hidden shrink-0 border-r border-border bg-surface transition-all duration-300 md:flex md:flex-col ${
+          className={`sticky top-0 hidden h-screen shrink-0 border-r border-border bg-surface transition-all duration-300 md:flex md:flex-col ${
             isCollapsed ? "w-20" : "w-56"
           }`}
         >
@@ -104,7 +104,7 @@ export function AppShell({ children }: AppShellProps) {
             </button>
           )}
 
-          <nav className="flex-1 space-y-1 p-2.5">
+          <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2.5">
             <p
               className={`mb-3 px-3 text-xs font-semibold uppercase tracking-widest text-muted ${
                 isCollapsed ? "sr-only" : ""
@@ -114,7 +114,7 @@ export function AppShell({ children }: AppShellProps) {
             </p>
 
             {navigationItems.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 
               return (
                 <Link
