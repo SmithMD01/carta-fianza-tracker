@@ -1,0 +1,22 @@
+export type Guarantee = {
+  id: string;
+  projectCode: string;
+  projectName: string;
+  entityName: string;
+  insurerName: string;
+  guaranteeNumber: string;
+  guaranteeReason: string;
+  guaranteeValue: number;
+  projectValue: number;
+  premium: number;
+  premiumPercentage: number;
+  collateral: number;
+  collateralPercentage: number;
+  validFrom: string;
+  expiresAt: string;
+  renewalDays: number;
+  status: string;
+  requestStatus: string;
+  guaranteeStage: string;
+  projectStage: string;
+};

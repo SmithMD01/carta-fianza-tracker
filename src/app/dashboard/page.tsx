@@ -10,22 +10,26 @@ export default function DashboardPage() {
                 Resumen del seguimiento de Cartas Fianza.
             </p>
 
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
+            <div className="mt-8 grid gap-4 md:grid-cols-4">
                 <div className="rounded-xl bg-white p-5 shadow-md">
                     <p className="text-sm text-slate-500">Cartas Fianza</p>
                     <p className="mt-2 text-3xl font-semibold">0</p>
                 </div>
 
-                <div className="rounded-xl bg-white p-5 shadow-sm">
+                <div className="rounded-xl bg-white p-5 shadow-md">
                     <p className="text-sm text-slate-500">Cartas activas</p>
                     <p className="mt-2 text-3xl font-semibold">0</p>
                 </div>
 
-                <div className="rounded-xl bg-white p-5 shadow-sm">
+                <div className="rounded-xl bg-white p-5 shadow-md">
                     <p className="text-sm text-slate-500">Próximas a vencer</p>
                     <p className="mt-2 text-3xl font-semibold">0</p>
                 </div>
 
+                <div className="rounded-xl bg-white p-5 shadow-md">
+                    <p className="text-sm text-slate-500">Encaje por Recuperar</p>
+                    <p className="mt-2 text-3xl font-semibold">0</p>
+                </div>
 
 
             </div>

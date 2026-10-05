@@ -41,7 +41,7 @@ export function AppShell({children}: AppShellProps) {
 
                         <div>
                             <p className="text-sm text-muted">
-                                Gestion / <span className="font-medium text-foreground">Cartas Fianza</span>
+                                Sistema Gestion / <span className="font-medium text-foreground">Cartas Fianza</span>
                             </p>
                         </div>
 
