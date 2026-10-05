@@ -1,5 +1,6 @@
 import { mockGuarantees } from "@/data/mock-guarantees";
 import { GuaranteesExplorer } from "@/components/guarantees/guarantees-explorer";
+import { GuaranteeCreateModal } from "@/components/guarantees/guarantee-create-modal";
 
 
 export default function CartasFianzaPage() {
@@ -10,9 +11,7 @@ export default function CartasFianzaPage() {
                 <h1 className="mt-2 text-3xl font-bold tracking-tight">Cartas Fianza</h1>
                 <p className="mt-2 text-sm text-muted">Lista de cartas fianza registradas</p>
 
-                <button className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/80">
-                    Agregar Carta Fianza
-                </button>
+                <GuaranteeCreateModal />
                 <button className="ml-2 mt-4 rounded-lg bg-success px-4 py-2 text-sm font-medium text-white border hover:bg-secondary/80">
                     Exportar Excel
                 </button>

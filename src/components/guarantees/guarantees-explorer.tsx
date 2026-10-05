@@ -140,8 +140,8 @@ export function GuaranteesExplorer({
 
       {
 
-        <section className="mt-8 overflow-x-auto rounded-xl border border-border bg-surface">
-          <section className="mt-4 mb-4 ml-4 mr-4 flex rounded-xl border border-border bg-surface-muted px-5 py-4">
+        <section className="mt-8 rounded-xl border border-border bg-surface">
+          <section className="mt-4 mb-4 ml-4 mr-4 flex rounded-xl border border-border bg-surface-muted px-5 py-4 md:flex-row md:items-center">
               <h2 className="text-sm font-semibold text-foreground">Responder Pregunta: </h2>
               
               <select
@@ -155,63 +155,68 @@ export function GuaranteesExplorer({
                 <option value="Vencido">Cartas Fianza Vencidas</option>
                 <option value="Devuelto">Cartas Fianza Devueltas</option>
               </select>
-
-              </section>
-                <table className="min-w-[1600px] divide-y divide-border text-xs leading-5">
-                  <thead className="bg-surface-muted">
-                      <tr>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Nro</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Codigo Proyecto</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Obra Referencia</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Entidad</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Aseguradora</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">N° Carta Fianza</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Motivo Carta</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Valor CF</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Valor Proyecto</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Prima</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">% Prima</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Encaje</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">% Encaje</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Fecha Vigencia</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Fecha Vencimiento</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Dias Renovar</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Solicitud</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Etapa CF</th>
-                          <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500 uppercase tracking-wider">Etapa Proyecto</th>
-                      </tr>
-                        </thead>
-
-                        <tbody className="bg-surface divide-y divide-border">
-                            {filteredGuarantees.map((guarantee, index) => (
-                        <tr key={guarantee.id} className="hover:bg-surface-muted">
-                            <td className="px-3 py-2">{index + 1}</td>
-                            <td className="px-3 py-2 text-xs">{guarantee.projectCode}</td>
-                            <td className="px-3 py-2 text-xs">{guarantee.projectName}</td>
-                            <td className="px-3 py-2 text-xs">{guarantee.entityName}</td>
-                            <td className="px-3 py-2 text-xs">{guarantee.insurerName}</td>
-                            <td className="px-3 py-2 text-xs">{guarantee.guaranteeNumber}</td>
-                            <td className="px-3 py-2 text-xs">{guarantee.guaranteeReason}</td>
-                            <td className="whitespace-nowrap px-3 py-2 text-xs">S/{guarantee.guaranteeValue.toLocaleString("es-PE")}</td>
-                            <td className="whitespace-nowrap px-3 py-2 text-xs">S/{guarantee.projectValue.toLocaleString("es-PE")}</td>
-                            <td className="whitespace-nowrap px-3 py-2 text-xs">S/{guarantee.premium.toLocaleString("es-PE")}</td>
-                            <td className="px-3 py-2 text-xs">{guarantee.premiumPercentage}%</td>
-                            <td className="whitespace-nowrap px-3 py-2 text-xs">S/{guarantee.collateral.toLocaleString("es-PE")}</td>
-                            <td className="px-3 py-2 text-xs">{guarantee.collateralPercentage}%</td>
-                            <td className="whitespace-nowrap px-3 py-2 text-xs">{guarantee.validFrom}</td>
-                            <td className="whitespace-nowrap px-3 py-2 text-xs">{guarantee.expiresAt}</td>
-                            <td className="px-3 py-2 text-xs">{guarantee.renewalDays}</td>
-                            <td className="px-3 py-2 text-xs">{guarantee.status}</td>
-                            <td className="px-3 py-2 text-xs">{guarantee.requestStatus}</td>
-                            <td className="px-3 py-2 text-xs">{guarantee.guaranteeStage}</td>
-                            <td className="px-3 py-2 text-xs">{guarantee.projectStage}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
           </section>
+            <section className="overflow-x-auto">
+              <table className="min-w-[1600px] divide-y divide-border text-xs leading-5">
+                <thead className="bg-surface-muted">
+                    <tr>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">N°</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Codigo P. / CUI</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Obra / Entidad</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Aseguradora</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">N° Carta Fianza</th>
+                        <th className="px-6 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Motivo Carta</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Valor CF</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Valor Proyecto</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Prima</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">% Prima</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Encaje</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">% Encaje</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Fecha Vigencia</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Fecha Vencimiento</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Dias Renovar</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Estado</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Solicitud</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Etapa CF</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Etapa Proyecto</th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Acciones</th>
+                    </tr>
+                      </thead>
 
+                      <tbody className="bg-surface divide-y divide-border">
+                          {filteredGuarantees.map((guarantee, index) => (
+                      <tr key={guarantee.id} className="hover:bg-surface-muted">
+                          <td className="px-3 py-2">{index + 1}</td>
+                          <td className="px-3 py-2 text-xs">
+                            <div className="font-semibold text-foreground">{guarantee.projectCode}</div>
+                            <div className="text-muted"><em>{guarantee.projectCui}</em></div>                            
+                          </td>
+                          <td className="px-3 py-2 text-xs">
+                            <div className="font-semibold text-foreground">{guarantee.projectName}</div>
+                            <div className="text-muted"><em>{guarantee.entityName}</em></div> 
+                          </td>
+                          <td className="px-3 py-2 text-xs">{guarantee.insurerName}</td>
+                          <td className="px-3 py-2 text-xs">{guarantee.guaranteeNumber}</td>
+                          <td className="px-6 py-2 text-xs">{guarantee.guaranteeReason}</td>
+                          <td className="whitespace-nowrap px-3 py-2 text-xs">S/{guarantee.guaranteeValue.toLocaleString("es-PE")}</td>
+                          <td className="whitespace-nowrap px-3 py-2 text-xs">S/{guarantee.projectValue.toLocaleString("es-PE")}</td>
+                          <td className="whitespace-nowrap px-3 py-2 text-xs">S/{guarantee.premium.toLocaleString("es-PE")}</td>
+                          <td className="px-3 py-2 text-xs">{guarantee.premiumPercentage}%</td>
+                          <td className="whitespace-nowrap px-3 py-2 text-xs">S/{guarantee.collateral.toLocaleString("es-PE")}</td>
+                          <td className="px-3 py-2 text-xs">{guarantee.collateralPercentage}%</td>
+                          <td className="whitespace-nowrap px-3 py-2 text-xs">{guarantee.validFrom}</td>
+                          <td className="whitespace-nowrap px-3 py-2 text-xs">{guarantee.expiresAt}</td>
+                          <td className="px-3 py-2 text-xs">{guarantee.renewalDays}</td>
+                          <td className="px-3 py-2 text-xs">{guarantee.status}</td>
+                          <td className="px-3 py-2 text-xs">{guarantee.requestStatus}</td>
+                          <td className="px-3 py-2 text-xs">{guarantee.guaranteeStage}</td>
+                          <td className="px-3 py-2 text-xs">{guarantee.projectStage}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </section>
+        </section>
       }
     </div>
   );
