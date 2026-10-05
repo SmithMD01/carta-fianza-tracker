@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import type { Project } from "@/types/project";
+
+type GuaranteeCreateModalProps = {
+  projects: Project[];
+};
 
 type FormValues = {
-  projectCode: string;
-  projectCui: string;
-  projectName: string;
-  entityName: string;
+  projectId: string;
   insurerName: string;
   guaranteeNumber: string;
   guaranteeReason: string;
@@ -16,20 +18,12 @@ type FormValues = {
   requestedStage: string;
   guaranteeValue: string;
   componentValue: string;
-  projectValue: string;
   costCenter: string;
-  formalProjectName: string;
   observations: string;
-  selectionProcess: string;
-  consortiumWith: string;
-  wonWith: string;
 };
 
 const initialFormValues: FormValues = {
-  projectCode: "",
-  projectCui: "",
-  projectName: "",
-  entityName: "",
+  projectId: "",
   insurerName: "",
   guaranteeNumber: "",
   guaranteeReason: "",
@@ -39,13 +33,8 @@ const initialFormValues: FormValues = {
   requestedStage: "",
   guaranteeValue: "",
   componentValue: "",
-  projectValue: "",
   costCenter: "",
-  formalProjectName: "",
   observations: "",
-  selectionProcess: "",
-  consortiumWith: "",
-  wonWith: "",
 };
 
 const inputClassName =
@@ -83,9 +72,15 @@ function InputField({
   );
 }
 
-export function GuaranteeCreateModal() {
+export function GuaranteeCreateModal({
+  projects,
+}: GuaranteeCreateModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [formValues, setFormValues] = useState<FormValues>(initialFormValues);
+
+  const selectedProject = projects.find(
+    (project) => project.id === formValues.projectId,
+  );
 
   const updateField = (field: keyof FormValues, value: string) => {
     setFormValues((currentValues) => ({
@@ -102,11 +97,21 @@ export function GuaranteeCreateModal() {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!selectedProject) return;
+
     const guaranteeDraft = {
       ...formValues,
+      projectCode: selectedProject.projectCode,
+      projectCui: selectedProject.cui,
+      projectName: selectedProject.referenceName,
+      formalProjectName: selectedProject.formalName,
+      entityName: selectedProject.entityName,
+      projectValue: selectedProject.projectValue,
+      selectionProcess: selectedProject.selectionProcess,
+      consortiumWith: selectedProject.consortiumWith,
+      wonWith: selectedProject.wonWith,
       guaranteeValue: Number(formValues.guaranteeValue),
       componentValue: Number(formValues.componentValue),
-      projectValue: Number(formValues.projectValue),
     };
 
     console.log("Carta fianza registrada:", guaranteeDraft);
@@ -137,7 +142,7 @@ export function GuaranteeCreateModal() {
                   Registrar carta fianza
                 </h2>
                 <p className="mt-1 text-sm text-muted">
-                  Completa los datos principales del registro.
+                  Selecciona un proyecto y completa los datos de la carta.
                 </p>
               </div>
 
@@ -153,45 +158,114 @@ export function GuaranteeCreateModal() {
 
             <form onSubmit={handleSubmit} className="space-y-8 p-6">
               <section>
-                <h3 className="mb-4 text-sm font-semibold text-primary">Datos del proyecto</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <InputField label="Código de proyecto interno" value={formValues.projectCode} required onChange={(value) => updateField("projectCode", value)} />
-                  <InputField label="CUI" value={formValues.projectCui} required onChange={(value) => updateField("projectCui", value)} />
-                  <InputField label="Obra o nombre referencial" value={formValues.projectName} required onChange={(value) => updateField("projectName", value)} />
-                  <InputField label="Entidad" value={formValues.entityName} required onChange={(value) => updateField("entityName", value)} />
-                  <InputField label="Entidad financiera" value={formValues.insurerName} required onChange={(value) => updateField("insurerName", value)} />
-                  <InputField label="Nombre formal del proyecto" value={formValues.formalProjectName} required onChange={(value) => updateField("formalProjectName", value)} />
-                </div>
+                <h3 className="mb-4 text-sm font-semibold text-primary">
+                  Proyecto asociado
+                </h3>
+
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-muted">
+                    Seleccionar proyecto <span className="text-danger">*</span>
+                  </span>
+                  <select
+                    value={formValues.projectId}
+                    required
+                    onChange={(event) => updateField("projectId", event.target.value)}
+                    className={inputClassName}
+                  >
+                    <option value="">Seleccionar proyecto...</option>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.projectCode} · {project.referenceName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {selectedProject && (
+                  <div className="mt-4 grid gap-3 rounded-xl border border-border bg-surface-muted p-4 text-sm md:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <p className="text-xs text-muted">Código / CUI</p>
+                      <p className="font-semibold text-foreground">
+                        {selectedProject.projectCode} · {selectedProject.cui}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted">Obra referencial</p>
+                      <p className="font-semibold text-foreground">{selectedProject.referenceName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted">Entidad</p>
+                      <p className="font-semibold text-foreground">{selectedProject.entityName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted">Nombre formal</p>
+                      <p className="font-semibold text-foreground">{selectedProject.formalName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted">Valor del proyecto</p>
+                      <p className="font-semibold text-foreground">
+                        S/ {selectedProject.projectValue.toLocaleString("es-PE")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted">Etapa del proyecto</p>
+                      <p className="font-semibold text-foreground">{selectedProject.projectStage}</p>
+                    </div>
+                  </div>
+                )}
               </section>
 
               <section>
-                <h3 className="mb-4 text-sm font-semibold text-primary">Datos de la carta fianza</h3>
+                <h3 className="mb-4 text-sm font-semibold text-primary">
+                  Datos de la carta fianza
+                </h3>
                 <div className="grid gap-4 md:grid-cols-2">
+                  <InputField label="Entidad financiera" value={formValues.insurerName} required onChange={(value) => updateField("insurerName", value)} />
                   <InputField label="N.° carta fianza" value={formValues.guaranteeNumber} required onChange={(value) => updateField("guaranteeNumber", value)} />
                   <InputField label="Motivo carta fianza" value={formValues.guaranteeReason} required onChange={(value) => updateField("guaranteeReason", value)} />
                   <InputField label="Área solicitante" value={formValues.requestingArea} required onChange={(value) => updateField("requestingArea", value)} />
                   <InputField label="Etapa solicitada" value={formValues.requestedStage} required onChange={(value) => updateField("requestedStage", value)} />
-                  <InputField label="Proceso de selección" value={formValues.selectionProcess} onChange={(value) => updateField("selectionProcess", value)} />
                   <InputField label="CeCo" value={formValues.costCenter} onChange={(value) => updateField("costCenter", value)} />
                 </div>
               </section>
 
               <section>
-                <h3 className="mb-4 text-sm font-semibold text-primary">Fechas y valores</h3>
+                <h3 className="mb-4 text-sm font-semibold text-primary">
+                  Fechas y valores
+                </h3>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <InputField label="Fecha inicio" type="date" value={formValues.validFrom} required onChange={(value) => updateField("validFrom", value)} />
                   <InputField label="Fecha vencimiento" type="date" value={formValues.expiresAt} required onChange={(value) => updateField("expiresAt", value)} />
                   <InputField label="Valor CF" type="number" value={formValues.guaranteeValue} required onChange={(value) => updateField("guaranteeValue", value)} />
                   <InputField label="Valor componente" type="number" value={formValues.componentValue} onChange={(value) => updateField("componentValue", value)} />
-                  <InputField label="Valor proyecto" type="number" value={formValues.projectValue} required onChange={(value) => updateField("projectValue", value)} />
                 </div>
               </section>
 
               <section>
-                <h3 className="mb-4 text-sm font-semibold text-primary">Información adicional</h3>
+                <h3 className="mb-4 text-sm font-semibold text-primary">
+                  Información adicional
+                </h3>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <InputField label="Consorciado con" value={formValues.consortiumWith} onChange={(value) => updateField("consortiumWith", value)} />
-                  <InputField label="Ganado con" value={formValues.wonWith} onChange={(value) => updateField("wonWith", value)} />
+                  <div className="rounded-lg border border-border bg-surface-muted px-3 py-2">
+                    <p className="text-xs font-medium text-muted">Proceso de selección</p>
+                    <p className="mt-1 text-sm text-foreground">
+                      {selectedProject?.selectionProcess || "Selecciona un proyecto"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-surface-muted px-3 py-2">
+                    <p className="text-xs font-medium text-muted">Consorciado con</p>
+                    <p className="mt-1 text-sm text-foreground">
+                      {selectedProject?.consortiumWith || "Selecciona un proyecto"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border border-border bg-surface-muted px-3 py-2">
+                    <p className="text-xs font-medium text-muted">Ganado con</p>
+                    <p className="mt-1 text-sm text-foreground">
+                      {selectedProject?.wonWith || "Selecciona un proyecto"}
+                    </p>
+                  </div>
                 </div>
 
                 <label className="mt-4 block">
@@ -206,17 +280,10 @@ export function GuaranteeCreateModal() {
               </section>
 
               <footer className="flex justify-end gap-3 border-t border-border pt-5">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-muted"
-                >
+                <button type="button" onClick={closeModal} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-muted">
                   Cancelar
                 </button>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
-                >
+                <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark">
                   Registrar carta fianza
                 </button>
               </footer>

@@ -8,6 +8,10 @@
   --primary-dark: #1d4ed8;
   --primary-soft: #eff6ff;
 
+  --secundary: #49e3f7;
+  --secundary-dark: #0ea5e9;
+  --secundary-soft: #e0f2fe;
+
   --accent: #d97706;
 
   --surface: #ffffff;
@@ -28,6 +32,10 @@
   --color-primary: var(--primary);
   --color-primary-dark: var(--primary-dark);
   --color-primary-soft: var(--primary-soft);
+
+  --color-secundary: var(--secundary);
+  --color-secundary-dark: var(--secundary-dark);
+  --color-secundary-soft: var(--secundary-soft);
 
   --color-accent: var(--accent);
 

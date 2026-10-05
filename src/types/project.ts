@@ -6,6 +6,11 @@ export type Project = {
   formalName: string;
   entityName: string;
   financialEntityName: string;
+  projectValue: number;
+  selectionProcess: string;
+  consortiumWith: string;
+  wonWith: string;
+  projectStage: string;
   activeGuarantees: number;
   status: string;
 };
