@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Project } from "@/types/project";
+import { getGuaranteeReasonsForOrigin, REQUESTING_AREAS } from "@/config/business-options";
 
 type GuaranteeCreateModalProps = {
   projects: Project[];
@@ -15,8 +16,8 @@ type FormValues = {
   validFrom: string;
   expiresAt: string;
   requestingArea: string;
-  requestedStage: string;
-  guaranteeValue: string;
+  validityDays: string;
+  guaranteePercentage: string;
   componentValue: string;
   costCenter: string;
   observations: string;
@@ -30,8 +31,8 @@ const initialFormValues: FormValues = {
   validFrom: "",
   expiresAt: "",
   requestingArea: "",
-  requestedStage: "",
-  guaranteeValue: "",
+  validityDays: "",
+  guaranteePercentage: "",
   componentValue: "",
   costCenter: "",
   observations: "",
@@ -82,11 +83,31 @@ export function GuaranteeCreateModal({
     (project) => project.id === formValues.projectId,
   );
 
+  const availableReasons = getGuaranteeReasonsForOrigin(selectedProject?.wonWith ?? "");
+  const calculatedGuaranteeValue =
+    (Number(formValues.componentValue) * Number(formValues.guaranteePercentage)) / 100;
+
+  const calculateExpirationDate = (validFrom: string, validityDays: string) => {
+    if (!validFrom || !validityDays) return "";
+    const date = new Date(`${validFrom}T00:00:00`);
+    date.setDate(date.getDate() + Number(validityDays));
+    return date.toISOString().slice(0, 10);
+  };
+
   const updateField = (field: keyof FormValues, value: string) => {
-    setFormValues((currentValues) => ({
-      ...currentValues,
-      [field]: value,
-    }));
+    setFormValues((currentValues) => {
+      const nextValues = { ...currentValues, [field]: value };
+
+      if (field === "projectId") {
+        nextValues.guaranteeReason = "";
+      }
+
+      if (field === "validFrom" || field === "validityDays") {
+        nextValues.expiresAt = calculateExpirationDate(nextValues.validFrom, nextValues.validityDays);
+      }
+
+      return nextValues;
+    });
   };
 
   const closeModal = () => {
@@ -110,8 +131,11 @@ export function GuaranteeCreateModal({
       selectionProcess: selectedProject.selectionProcess,
       consortiumWith: selectedProject.consortiumWith,
       wonWith: selectedProject.wonWith,
-      guaranteeValue: Number(formValues.guaranteeValue),
+      guaranteeValue: calculatedGuaranteeValue,
       componentValue: Number(formValues.componentValue),
+      guaranteePercentage: Number(formValues.guaranteePercentage),
+      validityDays: Number(formValues.validityDays),
+      status: "Solicitud",
     };
 
     console.log("Carta fianza registrada:", guaranteeDraft);
@@ -220,11 +244,22 @@ export function GuaranteeCreateModal({
                   Datos de la carta fianza
                 </h3>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <InputField label="Entidad financiera" value={formValues.insurerName} required onChange={(value) => updateField("insurerName", value)} />
-                  <InputField label="N.° carta fianza" value={formValues.guaranteeNumber} required onChange={(value) => updateField("guaranteeNumber", value)} />
-                  <InputField label="Motivo carta fianza" value={formValues.guaranteeReason} required onChange={(value) => updateField("guaranteeReason", value)} />
-                  <InputField label="Área solicitante" value={formValues.requestingArea} required onChange={(value) => updateField("requestingArea", value)} />
-                  <InputField label="Etapa solicitada" value={formValues.requestedStage} required onChange={(value) => updateField("requestedStage", value)} />
+                  <InputField label="Entidad financiera" value={formValues.insurerName} onChange={(value) => updateField("insurerName", value)} />
+                  <InputField label="N.° carta fianza" value={formValues.guaranteeNumber} onChange={(value) => updateField("guaranteeNumber", value)} />
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-medium text-muted">Motivo carta fianza <span className="text-danger">*</span></span>
+                    <select value={formValues.guaranteeReason} required onChange={(event) => updateField("guaranteeReason", event.target.value)} className={inputClassName} disabled={!selectedProject}>
+                      <option value="">{selectedProject ? "Seleccionar motivo..." : "Selecciona un proyecto"}</option>
+                      {availableReasons.map((reason) => <option key={reason} value={reason}>{reason}</option>)}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-medium text-muted">Área solicitante <span className="text-danger">*</span></span>
+                    <select value={formValues.requestingArea} required onChange={(event) => updateField("requestingArea", event.target.value)} className={inputClassName}>
+                      <option value="">Seleccionar área...</option>
+                      {REQUESTING_AREAS.map((area) => <option key={area} value={area}>{area}</option>)}
+                    </select>
+                  </label>
                   <InputField label="CeCo" value={formValues.costCenter} onChange={(value) => updateField("costCenter", value)} />
                 </div>
               </section>
@@ -235,9 +270,14 @@ export function GuaranteeCreateModal({
                 </h3>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <InputField label="Fecha inicio" type="date" value={formValues.validFrom} required onChange={(value) => updateField("validFrom", value)} />
+                  <InputField label="Cantidad de días de vigencia" type="number" value={formValues.validityDays} required onChange={(value) => updateField("validityDays", value)} />
                   <InputField label="Fecha vencimiento" type="date" value={formValues.expiresAt} required onChange={(value) => updateField("expiresAt", value)} />
-                  <InputField label="Valor CF" type="number" value={formValues.guaranteeValue} required onChange={(value) => updateField("guaranteeValue", value)} />
-                  <InputField label="Valor componente" type="number" value={formValues.componentValue} onChange={(value) => updateField("componentValue", value)} />
+                  <InputField label="Valor componente" type="number" value={formValues.componentValue} required onChange={(value) => updateField("componentValue", value)} />
+                  <InputField label="Porcentaje para valor CF" type="number" value={formValues.guaranteePercentage} required onChange={(value) => updateField("guaranteePercentage", value)} />
+                  <div className="rounded-lg border border-border bg-surface-muted px-3 py-2">
+                    <p className="text-xs font-medium text-muted">Valor CF calculado</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">S/ {calculatedGuaranteeValue.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  </div>
                 </div>
               </section>
 

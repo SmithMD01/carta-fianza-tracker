@@ -19,13 +19,10 @@ model Project {
   consortiumWith       String?
   wonWith              String?
   projectStage         String
-  activeGuarantees     Int         @default(0)
-  status               String
   guarantees           Guarantee[]
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
 
-  @@index([status])
   @@index([projectStage])
 }
 
@@ -41,32 +38,32 @@ model FinancialEntity {
 model Guarantee {
   id                    String          @id @default(uuid())
   projectId             String
-  financialEntityId     String
-  guaranteeNumber       String          @unique
+  financialEntityId     String?
+  guaranteeNumber       String?         @unique
   guaranteeReason       String
-  guaranteeStage        String
-  requestedStage        String
-  validFrom             DateTime        @db.Date
-  expiresAt             DateTime        @db.Date
+  guaranteeGroups       String[]        @default([])
+  validFrom             DateTime?       @db.Date
+  validityDays          Int?
+  expiresAt             DateTime?       @db.Date
   requestingArea        String
   guaranteeValue        Decimal         @db.Decimal(18, 2)
-  projectValue          Decimal         @db.Decimal(18, 2)
+  guaranteePercentage   Decimal?        @db.Decimal(7, 4)
   componentValue        Decimal?        @db.Decimal(18, 2)
   costCenter            String?
   observations          String?
-  selectionProcess      String
-  consortiumWith        String?
-  wonWith               String?
   premium               Decimal?        @db.Decimal(18, 2)
   premiumPercentage     Decimal?        @db.Decimal(7, 4)
   collateral            Decimal?        @db.Decimal(18, 2)
   collateralPercentage  Decimal?        @db.Decimal(7, 4)
   renewalDays           Int             @default(0)
-  status                String
-  requestStatus         String
-  projectStage          String
+  renewalNumber         Int?
+  originalGuaranteeId   String?
+  status                String          @default("Solicitud")
+  requestStatus         String?
   project               Project         @relation(fields: [projectId], references: [id], onDelete: Restrict)
-  financialEntity       FinancialEntity @relation(fields: [financialEntityId], references: [id], onDelete: Restrict)
+  financialEntity       FinancialEntity? @relation(fields: [financialEntityId], references: [id], onDelete: Restrict)
+  originalGuarantee     Guarantee?      @relation("GuaranteeRenewals", fields: [originalGuaranteeId], references: [id], onDelete: SetNull)
+  renewals              Guarantee[]     @relation("GuaranteeRenewals")
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
 
@@ -74,5 +71,5 @@ model Guarantee {
   @@index([financialEntityId])
   @@index([expiresAt])
   @@index([status])
-  @@index([projectStage, status])
+  @@index([projectId, status])
 }

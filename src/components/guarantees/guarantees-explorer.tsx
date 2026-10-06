@@ -26,7 +26,7 @@ type ColumnFilters = {
   validFrom: string;
   expiresAt: string;
   renewalDays: string;
-  guaranteeStage: string;
+  guaranteeGroups: string;
   projectStage: string;
 };
 
@@ -47,7 +47,7 @@ const initialColumnFilters: ColumnFilters = {
   validFrom: "",
   expiresAt: "",
   renewalDays: "",
-  guaranteeStage: "",
+  guaranteeGroups: "",
   projectStage: "",
 };
 
@@ -61,7 +61,7 @@ const questionOptions = [
 function matchesQuestion(guarantee: Guarantee, question: string) {
   if (question === "all") return true;
   if (question === "por-vencer") {
-    return ["Activo", "Por vencer", "En renovación"].includes(guarantee.status) && guarantee.renewalDays <= 60;
+    return guarantee.status === "Activa" && guarantee.renewalDays <= 60;
   }
   if (question === "encaje-pendiente") {
     return guarantee.projectStage === "Liquidación" && guarantee.status === "Devuelto";
@@ -69,8 +69,7 @@ function matchesQuestion(guarantee: Guarantee, question: string) {
 
   const searchableText = [
     guarantee.guaranteeReason,
-    guarantee.guaranteeStage,
-    guarantee.requestedStage,
+    ...guarantee.guaranteeGroups,
     guarantee.requestStatus,
     guarantee.observations,
   ]
@@ -110,7 +109,7 @@ export function GuaranteesExplorer({
 
   const statuses = [...new Set(guarantees.map((guarantee) => guarantee.status))];
   const requestStatuses = [...new Set(guarantees.map((guarantee) => guarantee.requestStatus))];
-  const guaranteeStages = [...new Set(guarantees.map((guarantee) => guarantee.guaranteeStage))];
+  const guaranteeGroups = [...new Set(guarantees.flatMap((guarantee) => guarantee.guaranteeGroups))];
   const projectStages = [...new Set(guarantees.map((guarantee) => guarantee.projectStage))];
 
   const filteredGuarantees = useMemo(() => {
@@ -150,7 +149,7 @@ export function GuaranteesExplorer({
         guarantee.validFrom.includes(columnFilters.validFrom) &&
         guarantee.expiresAt.includes(columnFilters.expiresAt) &&
         String(guarantee.renewalDays).includes(columnFilters.renewalDays) &&
-        matchesMultiFilter(guarantee.guaranteeStage, columnFilters.guaranteeStage) &&
+        matchesMultiFilter(guarantee.guaranteeGroups.join("|"), columnFilters.guaranteeGroups) &&
         matchesMultiFilter(guarantee.projectStage, columnFilters.projectStage);
 
       return (
@@ -279,8 +278,8 @@ export function GuaranteesExplorer({
                 <thead className="bg-surface-muted">
                     <tr>
                         <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">N°</th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Código P. / CUI <ColumnFilter label="proyecto" value={columnFilters.project} onChange={(value) => updateColumnFilter("project", value)} /></th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Obra / Entidad <ColumnFilter label="obra" value={columnFilters.projectName} onChange={(value) => updateColumnFilter("projectName", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Código P./Nombre Ref./CUI <ColumnFilter label="proyecto" value={columnFilters.project} onChange={(value) => updateColumnFilter("project", value)} /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Entidad <ColumnFilter label="obra" value={columnFilters.projectName} onChange={(value) => updateColumnFilter("projectName", value)} /></th>
                         <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Aseguradora <ColumnFilter label="aseguradora" value={columnFilters.insurer} onChange={(value) => updateColumnFilter("insurer", value)} options={insurers} multiple /></th>
                         <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">N.° Carta Fianza <ColumnFilter label="número de carta" value={columnFilters.guaranteeNumber} onChange={(value) => updateColumnFilter("guaranteeNumber", value)} /></th>
                         <th className="px-6 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Motivo Carta <ColumnFilter label="motivo" value={columnFilters.reason} onChange={(value) => updateColumnFilter("reason", value)} /></th>
@@ -295,7 +294,7 @@ export function GuaranteesExplorer({
                         <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Días renovar <ColumnFilter label="días para renovar" value={columnFilters.renewalDays} onChange={(value) => updateColumnFilter("renewalDays", value)} /></th>
                         <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Estado <ColumnFilter label="estado" value={columnFilters.status} onChange={(value) => updateColumnFilter("status", value)} options={statuses} multiple /></th>
                         <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Solicitud <ColumnFilter label="solicitud" value={columnFilters.requestStatus} onChange={(value) => updateColumnFilter("requestStatus", value)} options={requestStatuses} multiple /></th>
-                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Etapa CF <ColumnFilter label="etapa CF" value={columnFilters.guaranteeStage} onChange={(value) => updateColumnFilter("guaranteeStage", value)} options={guaranteeStages} multiple /></th>
+                        <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Agrupación <ColumnFilter label="agrupación" value={columnFilters.guaranteeGroups} onChange={(value) => updateColumnFilter("guaranteeGroups", value)} options={guaranteeGroups} multiple /></th>
                         <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Etapa Proyecto <ColumnFilter label="etapa de proyecto" value={columnFilters.projectStage} onChange={(value) => updateColumnFilter("projectStage", value)} options={projectStages} multiple /></th>
                         <th className="px-3 py-2 text-left text-[11px] font-medium text-muted uppercase tracking-wider">Acciones</th>
                     </tr>
@@ -307,11 +306,11 @@ export function GuaranteesExplorer({
                           <td className="px-3 py-2">{(visiblePage - 1) * pageSize + index + 1}</td>
                           <td className="px-3 py-2 text-xs">
                             <div className="font-semibold text-foreground">{guarantee.projectCode}</div>
-                            <div className="text-muted"><em>{guarantee.projectCui}</em></div>                            
+                            <div className="text-muted"><em>{guarantee.projectCui}</em></div>
+                            <div className="font-semibold text-foreground">{guarantee.projectName}</div>
                           </td>
                           <td className="px-3 py-2 text-xs">
-                            <div className="font-semibold text-foreground">{guarantee.projectName}</div>
-                            <div className="text-muted"><em>{guarantee.entityName}</em></div> 
+                            <div className="font-semibold">{guarantee.entityName}</div>
                           </td>
                           <td className="px-3 py-2 text-xs">{guarantee.insurerName}</td>
                           <td className="px-3 py-2 text-xs">{guarantee.guaranteeNumber}</td>
@@ -327,7 +326,7 @@ export function GuaranteesExplorer({
                           <td className="px-3 py-2 text-xs">{guarantee.renewalDays}</td>
                           <td className="px-3 py-2 text-xs">{guarantee.status}</td>
                           <td className="px-3 py-2 text-xs">{guarantee.requestStatus}</td>
-                          <td className="px-3 py-2 text-xs">{guarantee.guaranteeStage}</td>
+                          <td className="px-3 py-2 text-xs">{guarantee.guaranteeGroups.join(", ")}</td>
                           <td className="px-3 py-2 text-xs">{guarantee.projectStage}</td>
                           <td className="px-3 py-2 text-xs">
                             <GuaranteeEditModal guarantee={guarantee} />

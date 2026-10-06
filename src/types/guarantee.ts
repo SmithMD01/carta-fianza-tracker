@@ -10,15 +10,16 @@ export type Guarantee = {
 
   guaranteeNumber: string;
   guaranteeReason: string; // Motivo de la carta fianza
-  guaranteeStage: string; // Etapa de la carta fianza
-  requestedStage: string; // Etapa solicitada de la carta fianza
+  guaranteeGroups: string[]; // Clasificación usada para filtros
 
   validFrom: string; // Fecha de inicio de vigencia
+  validityDays: number; // Cantidad de días de vigencia
   expiresAt: string; // Fecha de vencimiento
 
   requestingArea: string; // Área solicitante
 
   guaranteeValue: number; // valor de la carta fianza
+  guaranteePercentage: number; // porcentaje usado para calcular el valor CF
   projectValue: number; // valor del proyecto
   componentValue: number; // valor del componente
 
@@ -34,7 +35,9 @@ export type Guarantee = {
   collateral: number; // encaje
   collateralPercentage: number; // encaje%
 
-  renewalDays: number; // Días de renovación
+  renewalDays: number; // Días restantes para renovar, calculados por el sistema
+  renewalNumber?: number;
+  originalGuaranteeId?: string;
   status: string; // Estado de la carta fianza
   requestStatus: string; // Estado de la solicitud
   projectStage: string; // Etapa del proyecto

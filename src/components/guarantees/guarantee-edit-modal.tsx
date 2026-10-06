@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Guarantee } from "@/types/guarantee";
+import { getGuaranteeReasonsForOrigin, REQUESTING_AREAS } from "@/config/business-options";
 
 type GuaranteeEditModalProps = {
   guarantee: Guarantee;
@@ -12,10 +13,10 @@ type EditFormValues = {
   guaranteeNumber: string;
   guaranteeReason: string;
   validFrom: string;
+  validityDays: string;
   expiresAt: string;
   requestingArea: string;
-  requestedStage: string;
-  guaranteeValue: string;
+  guaranteePercentage: string;
   componentValue: string;
   costCenter: string;
   observations: string;
@@ -30,10 +31,10 @@ function createInitialValues(guarantee: Guarantee): EditFormValues {
     guaranteeNumber: guarantee.guaranteeNumber,
     guaranteeReason: guarantee.guaranteeReason,
     validFrom: guarantee.validFrom,
+    validityDays: String(guarantee.validityDays),
     expiresAt: guarantee.expiresAt,
     requestingArea: guarantee.requestingArea,
-    requestedStage: guarantee.requestedStage,
-    guaranteeValue: String(guarantee.guaranteeValue),
+    guaranteePercentage: String(guarantee.guaranteePercentage),
     componentValue: String(guarantee.componentValue),
     costCenter: guarantee.costCenter,
     observations: guarantee.observations,
@@ -75,12 +76,25 @@ function EditField({
 export function GuaranteeEditModal({ guarantee }: GuaranteeEditModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [formValues, setFormValues] = useState(() => createInitialValues(guarantee));
+  const availableReasons = getGuaranteeReasonsForOrigin(guarantee.wonWith);
+  const calculatedGuaranteeValue =
+    (Number(formValues.componentValue) * Number(formValues.guaranteePercentage)) / 100;
+
+  const calculateExpirationDate = (validFrom: string, validityDays: string) => {
+    if (!validFrom || !validityDays) return "";
+    const date = new Date(`${validFrom}T00:00:00`);
+    date.setDate(date.getDate() + Number(validityDays));
+    return date.toISOString().slice(0, 10);
+  };
 
   const updateField = (field: keyof EditFormValues, value: string) => {
-    setFormValues((currentValues) => ({
-      ...currentValues,
-      [field]: value,
-    }));
+    setFormValues((currentValues) => {
+      const nextValues = { ...currentValues, [field]: value };
+      if (field === "validFrom" || field === "validityDays") {
+        nextValues.expiresAt = calculateExpirationDate(nextValues.validFrom, nextValues.validityDays);
+      }
+      return nextValues;
+    });
   };
 
   const openModal = () => {
@@ -96,7 +110,9 @@ export function GuaranteeEditModal({ guarantee }: GuaranteeEditModalProps) {
     const updatedGuarantee = {
       ...guarantee,
       ...formValues,
-      guaranteeValue: Number(formValues.guaranteeValue),
+      guaranteeValue: calculatedGuaranteeValue,
+      guaranteePercentage: Number(formValues.guaranteePercentage),
+      validityDays: Number(formValues.validityDays),
       componentValue: Number(formValues.componentValue),
     };
 
@@ -173,14 +189,28 @@ export function GuaranteeEditModal({ guarantee }: GuaranteeEditModalProps) {
                 <div className="grid gap-4 md:grid-cols-2">
                   <EditField label="Entidad financiera" value={formValues.insurerName} required onChange={(value) => updateField("insurerName", value)} />
                   <EditField label="N.° carta fianza" value={formValues.guaranteeNumber} required onChange={(value) => updateField("guaranteeNumber", value)} />
-                  <EditField label="Motivo carta fianza" value={formValues.guaranteeReason} required onChange={(value) => updateField("guaranteeReason", value)} />
-                  <EditField label="Área solicitante" value={formValues.requestingArea} required onChange={(value) => updateField("requestingArea", value)} />
-                  <EditField label="Etapa solicitada" value={formValues.requestedStage} required onChange={(value) => updateField("requestedStage", value)} />
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-medium text-muted">Motivo carta fianza <span className="text-danger">*</span></span>
+                    <select value={formValues.guaranteeReason} required onChange={(event) => updateField("guaranteeReason", event.target.value)} className={inputClassName}>
+                      {availableReasons.map((reason) => <option key={reason} value={reason}>{reason}</option>)}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-medium text-muted">Área solicitante <span className="text-danger">*</span></span>
+                    <select value={formValues.requestingArea} required onChange={(event) => updateField("requestingArea", event.target.value)} className={inputClassName}>
+                      {REQUESTING_AREAS.map((area) => <option key={area} value={area}>{area}</option>)}
+                    </select>
+                  </label>
                   <EditField label="CeCo" value={formValues.costCenter} onChange={(value) => updateField("costCenter", value)} />
                   <EditField label="Fecha inicio" type="date" value={formValues.validFrom} required onChange={(value) => updateField("validFrom", value)} />
+                  <EditField label="Cantidad de días de vigencia" type="number" value={formValues.validityDays} required onChange={(value) => updateField("validityDays", value)} />
                   <EditField label="Fecha vencimiento" type="date" value={formValues.expiresAt} required onChange={(value) => updateField("expiresAt", value)} />
-                  <EditField label="Valor CF" type="number" value={formValues.guaranteeValue} required onChange={(value) => updateField("guaranteeValue", value)} />
-                  <EditField label="Valor componente" type="number" value={formValues.componentValue} onChange={(value) => updateField("componentValue", value)} />
+                  <EditField label="Valor componente" type="number" value={formValues.componentValue} required onChange={(value) => updateField("componentValue", value)} />
+                  <EditField label="Porcentaje para valor CF" type="number" value={formValues.guaranteePercentage} required onChange={(value) => updateField("guaranteePercentage", value)} />
+                  <div className="rounded-lg border border-border bg-surface-muted px-3 py-2">
+                    <p className="text-xs font-medium text-muted">Valor CF calculado</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">S/ {calculatedGuaranteeValue.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  </div>
                 </div>
                 <label className="mt-4 block">
                   <span className="mb-1 block text-xs font-medium text-muted">Observaciones</span>

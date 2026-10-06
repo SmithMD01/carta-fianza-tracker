@@ -1,6 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { PROJECT_ORIGINS, PROJECT_STAGES } from "@/config/business-options";
+import type { Project } from "@/types/project";
+
+type ProjectCreateModalProps = {
+  project?: Project;
+  onSave?: (project: Project) => void;
+};
 
 type ProjectFormValues = {
   projectCode: string;
@@ -8,13 +15,11 @@ type ProjectFormValues = {
   referenceName: string;
   formalName: string;
   entityName: string;
-  financialEntityName: string;
   projectValue: string;
   selectionProcess: string;
   consortiumWith: string;
   wonWith: string;
   projectStage: string;
-  status: string;
 };
 
 const initialFormValues: ProjectFormValues = {
@@ -23,14 +28,29 @@ const initialFormValues: ProjectFormValues = {
   referenceName: "",
   formalName: "",
   entityName: "",
-  financialEntityName: "",
   projectValue: "",
   selectionProcess: "",
   consortiumWith: "",
   wonWith: "",
-  projectStage: "Inicio",
-  status: "En curso",
+  projectStage: PROJECT_STAGES[0],
 };
+
+function createInitialValues(project?: Project): ProjectFormValues {
+  if (!project) return initialFormValues;
+
+  return {
+    projectCode: project.projectCode,
+    cui: project.cui,
+    referenceName: project.referenceName,
+    formalName: project.formalName,
+    entityName: project.entityName,
+    projectValue: String(project.projectValue),
+    selectionProcess: project.selectionProcess,
+    consortiumWith: project.consortiumWith,
+    wonWith: project.wonWith,
+    projectStage: project.projectStage,
+  };
+}
 
 const inputClassName =
   "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary";
@@ -104,10 +124,9 @@ function SelectField({
   );
 }
 
-export function ProjectCreateModal() {
+export function ProjectCreateModal({ project, onSave }: ProjectCreateModalProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [formValues, setFormValues] =
-    useState<ProjectFormValues>(initialFormValues);
+  const [formValues, setFormValues] = useState<ProjectFormValues>(() => createInitialValues(project));
 
   const updateField = (
     field: keyof ProjectFormValues,
@@ -121,20 +140,21 @@ export function ProjectCreateModal() {
 
   const closeModal = () => {
     setIsOpen(false);
-    setFormValues(initialFormValues);
+    setFormValues(createInitialValues(project));
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const projectDraft = {
-      id: crypto.randomUUID(),
+    const projectDraft: Project = {
+      id: project?.id ?? crypto.randomUUID(),
       ...formValues,
       projectValue: Number(formValues.projectValue),
-      activeGuarantees: 0,
+      activeGuarantees: project?.activeGuarantees ?? 0,
     };
 
-    console.log("Proyecto registrado:", projectDraft);
+    onSave?.(projectDraft);
+    console.log(project ? "Proyecto actualizado:" : "Proyecto registrado:", projectDraft);
     closeModal();
   };
 
@@ -142,10 +162,15 @@ export function ProjectCreateModal() {
     <>
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
-        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+        onClick={() => {
+          setFormValues(createInitialValues(project));
+          setIsOpen(true);
+        }}
+        className={project
+          ? "inline-flex rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft"
+          : "rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"}
       >
-        Registrar proyecto
+        {project ? "Editar" : "Registrar proyecto"}
       </button>
 
       {isOpen && (
@@ -159,7 +184,7 @@ export function ProjectCreateModal() {
             <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface px-6 py-4">
               <div>
                 <h2 id="create-project-title" className="text-xl font-bold text-foreground">
-                  Registrar proyecto
+                  {project ? "Guardar cambios" : "Registrar proyecto"}
                 </h2>
                 <p className="mt-1 text-sm text-muted">
                   Completa los datos principales del proyecto.
@@ -177,7 +202,7 @@ export function ProjectCreateModal() {
             </header>
 
             <form onSubmit={handleSubmit} className="space-y-8 p-6">
-              <section>
+      <section>
                 <h3 className="mb-4 text-sm font-semibold text-primary">
                   Identificación del proyecto
                 </h3>
@@ -188,7 +213,6 @@ export function ProjectCreateModal() {
                   <InputField label="Nombre referencial" value={formValues.referenceName} required onChange={(value) => updateField("referenceName", value)} />
                   <InputField label="Nombre formal del proyecto" value={formValues.formalName} required onChange={(value) => updateField("formalName", value)} />
                   <InputField label="Entidad" value={formValues.entityName} required onChange={(value) => updateField("entityName", value)} />
-                  <InputField label="Entidad financiera" value={formValues.financialEntityName} onChange={(value) => updateField("financialEntityName", value)} />
                 </div>
               </section>
 
@@ -201,19 +225,16 @@ export function ProjectCreateModal() {
                   <InputField label="Valor del proyecto" type="number" value={formValues.projectValue} required onChange={(value) => updateField("projectValue", value)} />
                   <InputField label="Proceso de selección" value={formValues.selectionProcess} onChange={(value) => updateField("selectionProcess", value)} />
                   <InputField label="Consorciado con" value={formValues.consortiumWith} onChange={(value) => updateField("consortiumWith", value)} />
-                  <InputField label="Ganado con" value={formValues.wonWith} onChange={(value) => updateField("wonWith", value)} />
+                  <SelectField label="Ganado con" value={formValues.wonWith} options={[...PROJECT_ORIGINS]} required onChange={(value) => updateField("wonWith", value)} />
                 </div>
               </section>
 
               <section>
                 <h3 className="mb-4 text-sm font-semibold text-primary">
-                  Estado del proyecto
+                  Etapa del proyecto
                 </h3>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <SelectField label="Etapa del proyecto" value={formValues.projectStage} options={["Inicio", "Ejecución", "Cierre", "Liquidación"]} required onChange={(value) => updateField("projectStage", value)} />
-                  <SelectField label="Estado" value={formValues.status} options={["En curso", "En liquidación", "Finalizado", "Suspendido"]} required onChange={(value) => updateField("status", value)} />
-                </div>
+                <SelectField label="Etapa del proyecto" value={formValues.projectStage} options={[...PROJECT_STAGES]} required onChange={(value) => updateField("projectStage", value)} />
               </section>
 
               <footer className="flex justify-end gap-3 border-t border-border pt-5">

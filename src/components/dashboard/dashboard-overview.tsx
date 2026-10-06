@@ -38,16 +38,16 @@ function matchesQuestion(guarantee: Guarantee, question: string) {
   if (question === "por-vencer") return isNearExpiry(guarantee);
   if (question === "encaje-pendiente") return guarantee.projectStage === "Liquidación" && guarantee.status === "Devuelto";
 
-  return [guarantee.guaranteeReason, guarantee.guaranteeStage, guarantee.requestedStage, guarantee.requestStatus, guarantee.observations]
+  return [guarantee.guaranteeReason, guarantee.requestStatus, guarantee.observations]
     .join(" ").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(question);
 }
 
 function isActive(guarantee: Guarantee) {
-  return ["Activo", "Por vencer", "En renovación"].includes(guarantee.status);
+  return guarantee.status === "Activa";
 }
 
 function isNearExpiry(guarantee: Guarantee) {
-  return isActive(guarantee) && (guarantee.renewalDays <= 60 || guarantee.status === "En renovación");
+  return isActive(guarantee) && guarantee.renewalDays <= 60;
 }
 
 function matchesMultiFilter(value: string, filter: string) {

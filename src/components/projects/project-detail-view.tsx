@@ -13,11 +13,12 @@ const moneyFormatter = new Intl.NumberFormat("es-PE", {
 });
 
 function isActiveGuarantee(guarantee: Guarantee) {
-  return ["Activo", "Por vencer", "En renovación"].includes(guarantee.status);
+  return guarantee.status === "Activa";
 }
 
 export function ProjectDetailView({ project, guarantees }: ProjectDetailViewProps) {
   const activeGuarantees = guarantees.filter(isActiveGuarantee).length;
+  const requestedGuarantees = guarantees.filter((guarantee) => guarantee.status === "Solicitud").length;
 
   return (
     <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
@@ -34,7 +35,6 @@ export function ProjectDetailView({ project, guarantees }: ProjectDetailViewProp
               Detalle del proyecto
             </p>
             <h1 className="mt-2 text-2xl font-bold text-foreground">{project.referenceName}</h1>
-            <p className="mt-1 text-sm text-muted">{project.formalName}</p>
           </div>
 
           <Link
@@ -45,12 +45,19 @@ export function ProjectDetailView({ project, guarantees }: ProjectDetailViewProp
           </Link>
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          <SummaryCard label="Código" value={project.projectCode} />
-          <SummaryCard label="CUI" value={`CUI ${project.cui}`} />
-          <SummaryCard label="Entidad" value={project.entityName} />
-          <SummaryCard label="Aseguradora" value={project.financialEntityName} />
-          <SummaryCard label="Cartas activas" value={`${activeGuarantees} activa${activeGuarantees === 1 ? "" : "s"} de ${guarantees.length}`} />
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="xl:col-span-3">
+            <DetailField label="Nombre formal del proyecto" value={project.formalName} />
+          </div>
+          <DetailField label="Cartas activas" value={`${activeGuarantees} de ${guarantees.length}`} />
+          <DetailField label="Cartas solicitadas" value={`${requestedGuarantees} pendientes`} />
+          <DetailField label="Código / CUI" value={`${project.projectCode} · CUI ${project.cui}`} />
+          <DetailField label="Entidad" value={project.entityName} />
+          <DetailField label="Etapa del proyecto" value={project.projectStage} />
+          <DetailField label="Valor del proyecto" value={`S/ ${moneyFormatter.format(project.projectValue)}`} />
+          <DetailField label="Proceso de selección" value={project.selectionProcess || "No registrado"} />
+          <DetailField label="Consorciado con" value={project.consortiumWith || "No registrado"} />
+          <DetailField label="Ganado con" value={project.wonWith || "No registrado"} />
         </div>
       </div>
 
@@ -60,9 +67,6 @@ export function ProjectDetailView({ project, guarantees }: ProjectDetailViewProp
             <h2 className="text-sm font-bold text-foreground">Historial de cartas fianza</h2>
             <p className="text-sm text-muted">Las cartas vigentes se resaltan; las anteriores permanecen como historial.</p>
           </div>
-          <span className="inline-flex w-fit rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
-            {project.status}
-          </span>
         </div>
       </div>
 
@@ -116,11 +120,11 @@ export function ProjectDetailView({ project, guarantees }: ProjectDetailViewProp
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: string }) {
+function DetailField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-h-28 rounded-xl border border-border bg-surface px-5 py-4">
-      <p className="text-sm text-muted">{label}</p>
-      <p className="mt-3 text-xl font-bold text-foreground">{value}</p>
+    <div className="rounded-xl border border-border bg-surface-muted px-4 py-3">
+      <p className="text-xs font-medium text-muted">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
 }

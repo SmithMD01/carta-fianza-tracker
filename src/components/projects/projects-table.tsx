@@ -3,12 +3,14 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Project } from "@/types/project";
+import { ProjectCreateModal } from "@/components/projects/project-create-modal";
 
 type ProjectsTableProps = {
   projects: Project[];
+  onSaveProject: (project: Project) => void;
 };
 
-export function ProjectsTable({ projects }: ProjectsTableProps) {
+export function ProjectsTable({ projects, onSaveProject }: ProjectsTableProps) {
   const [search, setSearch] = useState("");
 
   const filteredProjects = useMemo(() => {
@@ -23,8 +25,7 @@ export function ProjectsTable({ projects }: ProjectsTableProps) {
         project.referenceName,
         project.formalName,
         project.entityName,
-        project.financialEntityName,
-        project.status,
+        project.projectStage,
       ].some((value) => value.toLowerCase().includes(normalizedSearch)),
     );
   }, [projects, search]);
@@ -60,9 +61,8 @@ export function ProjectsTable({ projects }: ProjectsTableProps) {
                 "Nombre referencial",
                 "Nombre formal del proyecto",
                 "Entidad",
-                "Entidad financiera",
                 "Cartas activas",
-                "Estado",
+                "Etapa",
                 "Acciones",
               ].map((heading) => (
                 <th key={heading} className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-muted">
@@ -84,27 +84,29 @@ export function ProjectsTable({ projects }: ProjectsTableProps) {
                 <td className="max-w-[220px] px-6 py-4 font-semibold text-foreground">{project.referenceName}</td>
                 <td className="max-w-[300px] px-6 py-4 text-muted">{project.formalName}</td>
                 <td className="max-w-[220px] px-6 py-4 font-semibold text-foreground">{project.entityName}</td>
-                <td className="px-6 py-4 text-muted">{project.financialEntityName}</td>
                 <td className="px-6 py-4">
                   <span className="inline-flex rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
                     {project.activeGuarantees} {project.activeGuarantees === 1 ? "activa" : "activas"}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-muted">{project.status}</td>
+                <td className="px-6 py-4 text-muted">{project.projectStage}</td>
                 <td className="px-6 py-4">
-                  <Link
-                    href={`/proyectos/${project.id}`}
-                    className="inline-flex whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft"
-                  >
-                    Ver detalle
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/proyectos/${project.id}`}
+                      className="inline-flex whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft"
+                    >
+                      Ver detalle
+                    </Link>
+                    <ProjectCreateModal project={project} onSave={onSaveProject} />
+                  </div>
                 </td>
               </tr>
             ))}
 
             {filteredProjects.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-6 py-10 text-center text-sm text-muted">
+                <td colSpan={7} className="px-6 py-10 text-center text-sm text-muted">
                   No se encontraron proyectos.
                 </td>
               </tr>
