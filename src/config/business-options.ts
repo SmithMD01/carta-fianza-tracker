@@ -44,7 +44,7 @@ export const GUARANTEE_REASONS_BY_ORIGIN: Record<string, string[]> = {
     "CF Ejecución de Mayor Trabajo de la Obra",
   ],
   "Expediente Técnico": [
-    "CF Ejecución Beta o Evaluación de la Obra",
+    "CF Ejecución Eval. de la Obra",
     "CF Ejecución Adicional de la Obra",
     "CF Supervisión de Ejecución de la Obra",
     "CF Ejecución de Mayor Trabajo de la Obra",

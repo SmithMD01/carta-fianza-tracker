@@ -10,32 +10,24 @@ type GuaranteeCreateModalProps = {
 
 type FormValues = {
   projectId: string;
-  insurerName: string;
-  guaranteeNumber: string;
   guaranteeReason: string;
   validFrom: string;
-  expiresAt: string;
   requestingArea: string;
   validityDays: string;
   guaranteePercentage: string;
   componentValue: string;
   costCenter: string;
-  observations: string;
 };
 
 const initialFormValues: FormValues = {
   projectId: "",
-  insurerName: "",
-  guaranteeNumber: "",
   guaranteeReason: "",
   validFrom: "",
-  expiresAt: "",
   requestingArea: "",
   validityDays: "",
   guaranteePercentage: "",
   componentValue: "",
   costCenter: "",
-  observations: "",
 };
 
 const inputClassName =
@@ -87,23 +79,12 @@ export function GuaranteeCreateModal({
   const calculatedGuaranteeValue =
     (Number(formValues.componentValue) * Number(formValues.guaranteePercentage)) / 100;
 
-  const calculateExpirationDate = (validFrom: string, validityDays: string) => {
-    if (!validFrom || !validityDays) return "";
-    const date = new Date(`${validFrom}T00:00:00`);
-    date.setDate(date.getDate() + Number(validityDays));
-    return date.toISOString().slice(0, 10);
-  };
-
   const updateField = (field: keyof FormValues, value: string) => {
     setFormValues((currentValues) => {
       const nextValues = { ...currentValues, [field]: value };
 
       if (field === "projectId") {
         nextValues.guaranteeReason = "";
-      }
-
-      if (field === "validFrom" || field === "validityDays") {
-        nextValues.expiresAt = calculateExpirationDate(nextValues.validFrom, nextValues.validityDays);
       }
 
       return nextValues;
@@ -222,8 +203,8 @@ export function GuaranteeCreateModal({
                       <p className="font-semibold text-foreground">{selectedProject.entityName}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted">Nombre formal</p>
-                      <p className="font-semibold text-foreground">{selectedProject.formalName}</p>
+                      <p className="text-xs text-muted">Ganado con</p>
+                      <p className="font-semibold text-foreground">{selectedProject.wonWith}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted">Valor del proyecto</p>
@@ -244,8 +225,6 @@ export function GuaranteeCreateModal({
                   Datos de la carta fianza
                 </h3>
                 <div className="grid gap-4 md:grid-cols-2">
-                  <InputField label="Entidad financiera" value={formValues.insurerName} onChange={(value) => updateField("insurerName", value)} />
-                  <InputField label="N.° carta fianza" value={formValues.guaranteeNumber} onChange={(value) => updateField("guaranteeNumber", value)} />
                   <label className="block">
                     <span className="mb-1 block text-xs font-medium text-muted">Motivo carta fianza <span className="text-danger">*</span></span>
                     <select value={formValues.guaranteeReason} required onChange={(event) => updateField("guaranteeReason", event.target.value)} className={inputClassName} disabled={!selectedProject}>
@@ -271,7 +250,6 @@ export function GuaranteeCreateModal({
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <InputField label="Fecha inicio" type="date" value={formValues.validFrom} required onChange={(value) => updateField("validFrom", value)} />
                   <InputField label="Cantidad de días de vigencia" type="number" value={formValues.validityDays} required onChange={(value) => updateField("validityDays", value)} />
-                  <InputField label="Fecha vencimiento" type="date" value={formValues.expiresAt} required onChange={(value) => updateField("expiresAt", value)} />
                   <InputField label="Valor componente" type="number" value={formValues.componentValue} required onChange={(value) => updateField("componentValue", value)} />
                   <InputField label="Porcentaje para valor CF" type="number" value={formValues.guaranteePercentage} required onChange={(value) => updateField("guaranteePercentage", value)} />
                   <div className="rounded-lg border border-border bg-surface-muted px-3 py-2">
@@ -279,44 +257,6 @@ export function GuaranteeCreateModal({
                     <p className="mt-1 text-sm font-semibold text-foreground">S/ {calculatedGuaranteeValue.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   </div>
                 </div>
-              </section>
-
-              <section>
-                <h3 className="mb-4 text-sm font-semibold text-primary">
-                  Información adicional
-                </h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-lg border border-border bg-surface-muted px-3 py-2">
-                    <p className="text-xs font-medium text-muted">Proceso de selección</p>
-                    <p className="mt-1 text-sm text-foreground">
-                      {selectedProject?.selectionProcess || "Selecciona un proyecto"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-lg border border-border bg-surface-muted px-3 py-2">
-                    <p className="text-xs font-medium text-muted">Consorciado con</p>
-                    <p className="mt-1 text-sm text-foreground">
-                      {selectedProject?.consortiumWith || "Selecciona un proyecto"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-lg border border-border bg-surface-muted px-3 py-2">
-                    <p className="text-xs font-medium text-muted">Ganado con</p>
-                    <p className="mt-1 text-sm text-foreground">
-                      {selectedProject?.wonWith || "Selecciona un proyecto"}
-                    </p>
-                  </div>
-                </div>
-
-                <label className="mt-4 block">
-                  <span className="mb-1 block text-xs font-medium text-muted">Observaciones</span>
-                  <textarea
-                    value={formValues.observations}
-                    onChange={(event) => updateField("observations", event.target.value)}
-                    rows={4}
-                    className={inputClassName}
-                  />
-                </label>
               </section>
 
               <footer className="flex justify-end gap-3 border-t border-border pt-5">

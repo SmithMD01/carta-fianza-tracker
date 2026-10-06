@@ -46,13 +46,14 @@ model Guarantee {
   validityDays          Int?
   expiresAt             DateTime?       @db.Date
   requestingArea        String
+  vof                   String?
+  carPolicy             String?
   guaranteeValue        Decimal         @db.Decimal(18, 2)
   guaranteePercentage   Decimal?        @db.Decimal(7, 4)
   componentValue        Decimal?        @db.Decimal(18, 2)
   costCenter            String?
   observations          String?
   premium               Decimal?        @db.Decimal(18, 2)
-  premiumPercentage     Decimal?        @db.Decimal(7, 4)
   collateral            Decimal?        @db.Decimal(18, 2)
   collateralPercentage  Decimal?        @db.Decimal(7, 4)
   renewalDays           Int             @default(0)

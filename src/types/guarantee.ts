@@ -17,6 +17,8 @@ export type Guarantee = {
   expiresAt: string; // Fecha de vencimiento
 
   requestingArea: string; // Área solicitante
+  vof: string; // Visto bueno / referencia de gestión
+  carPolicy: string; // Póliza CAR
 
   guaranteeValue: number; // valor de la carta fianza
   guaranteePercentage: number; // porcentaje usado para calcular el valor CF
@@ -31,7 +33,6 @@ export type Guarantee = {
   wonWith: string; // ganado con
 
   premium: number; // prima
-  premiumPercentage: number; // prima%
   collateral: number; // encaje
   collateralPercentage: number; // encaje%
 

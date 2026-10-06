@@ -16,10 +16,15 @@ type EditFormValues = {
   validityDays: string;
   expiresAt: string;
   requestingArea: string;
+  vof: string;
+  carPolicy: string;
   guaranteePercentage: string;
   componentValue: string;
+  premium: string;
+  collateral: string;
+  collateralPercentage: string;
   costCenter: string;
-  observations: string;
+  status: string;
 };
 
 const inputClassName =
@@ -34,10 +39,15 @@ function createInitialValues(guarantee: Guarantee): EditFormValues {
     validityDays: String(guarantee.validityDays),
     expiresAt: guarantee.expiresAt,
     requestingArea: guarantee.requestingArea,
+    vof: guarantee.vof,
+    carPolicy: guarantee.carPolicy,
     guaranteePercentage: String(guarantee.guaranteePercentage),
     componentValue: String(guarantee.componentValue),
+    premium: String(guarantee.premium),
+    collateral: String(guarantee.collateral),
+    collateralPercentage: String(guarantee.collateralPercentage),
     costCenter: guarantee.costCenter,
-    observations: guarantee.observations,
+    status: guarantee.status,
   };
 }
 
@@ -76,7 +86,11 @@ function EditField({
 export function GuaranteeEditModal({ guarantee }: GuaranteeEditModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [formValues, setFormValues] = useState(() => createInitialValues(guarantee));
-  const availableReasons = getGuaranteeReasonsForOrigin(guarantee.wonWith);
+  const availableReasons = Array.from(new Set([
+    ...getGuaranteeReasonsForOrigin(guarantee.wonWith),
+    guarantee.guaranteeReason,
+  ]));
+  const canChangeStatus = guarantee.status === "Solicitud" || guarantee.status === "Activa";
   const calculatedGuaranteeValue =
     (Number(formValues.componentValue) * Number(formValues.guaranteePercentage)) / 100;
 
@@ -114,6 +128,10 @@ export function GuaranteeEditModal({ guarantee }: GuaranteeEditModalProps) {
       guaranteePercentage: Number(formValues.guaranteePercentage),
       validityDays: Number(formValues.validityDays),
       componentValue: Number(formValues.componentValue),
+      premium: Number(formValues.premium),
+      collateral: Number(formValues.collateral),
+      collateralPercentage: Number(formValues.collateralPercentage),
+      status: formValues.status,
     };
 
     console.log("Carta fianza actualizada:", updatedGuarantee);
@@ -174,12 +192,16 @@ export function GuaranteeEditModal({ guarantee }: GuaranteeEditModalProps) {
                     <p className="font-semibold text-foreground">{guarantee.entityName}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted">Nombre formal</p>
-                    <p className="font-semibold text-foreground">{guarantee.formalProjectName}</p>
+                    <p className="text-xs text-muted">Ganado con</p>
+                    <p className="font-semibold text-foreground">{guarantee.wonWith}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted">Número de carta</p>
-                    <p className="font-semibold text-foreground">{guarantee.guaranteeNumber}</p>
+                    <p className="text-xs text-muted">Valor del proyecto</p>
+                    <p className="font-semibold text-foreground">S/ {guarantee.projectValue.toLocaleString("es-PE")}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted">Etapa del proyecto</p>
+                    <p className="font-semibold text-foreground">{guarantee.projectStage}</p>
                   </div>
                 </div>
               </section>
@@ -189,6 +211,20 @@ export function GuaranteeEditModal({ guarantee }: GuaranteeEditModalProps) {
                 <div className="grid gap-4 md:grid-cols-2">
                   <EditField label="Entidad financiera" value={formValues.insurerName} required onChange={(value) => updateField("insurerName", value)} />
                   <EditField label="N.° carta fianza" value={formValues.guaranteeNumber} required onChange={(value) => updateField("guaranteeNumber", value)} />
+                  {canChangeStatus ? (
+                    <label className="block">
+                      <span className="mb-1 block text-xs font-medium text-muted">Estado CF <span className="text-danger">*</span></span>
+                      <select value={formValues.status} required onChange={(event) => updateField("status", event.target.value)} className={inputClassName}>
+                        <option value="Solicitud">Solicitud</option>
+                        <option value="Activa">Activa</option>
+                      </select>
+                    </label>
+                  ) : (
+                    <div className="rounded-lg border border-border bg-surface-muted px-3 py-2">
+                      <p className="text-xs font-medium text-muted">Estado CF</p>
+                      <p className="mt-1 text-sm font-semibold text-foreground">{guarantee.status} (automático)</p>
+                    </div>
+                  )}
                   <label className="block">
                     <span className="mb-1 block text-xs font-medium text-muted">Motivo carta fianza <span className="text-danger">*</span></span>
                     <select value={formValues.guaranteeReason} required onChange={(event) => updateField("guaranteeReason", event.target.value)} className={inputClassName}>
@@ -202,25 +238,21 @@ export function GuaranteeEditModal({ guarantee }: GuaranteeEditModalProps) {
                     </select>
                   </label>
                   <EditField label="CeCo" value={formValues.costCenter} onChange={(value) => updateField("costCenter", value)} />
+                  <EditField label="VOF" value={formValues.vof} onChange={(value) => updateField("vof", value)} />
+                  <EditField label="Póliza CAR" value={formValues.carPolicy} onChange={(value) => updateField("carPolicy", value)} />
                   <EditField label="Fecha inicio" type="date" value={formValues.validFrom} required onChange={(value) => updateField("validFrom", value)} />
                   <EditField label="Cantidad de días de vigencia" type="number" value={formValues.validityDays} required onChange={(value) => updateField("validityDays", value)} />
                   <EditField label="Fecha vencimiento" type="date" value={formValues.expiresAt} required onChange={(value) => updateField("expiresAt", value)} />
                   <EditField label="Valor componente" type="number" value={formValues.componentValue} required onChange={(value) => updateField("componentValue", value)} />
                   <EditField label="Porcentaje para valor CF" type="number" value={formValues.guaranteePercentage} required onChange={(value) => updateField("guaranteePercentage", value)} />
+                  <EditField label="Monto prima" type="number" value={formValues.premium} onChange={(value) => updateField("premium", value)} />
+                  <EditField label="Monto encaje" type="number" value={formValues.collateral} onChange={(value) => updateField("collateral", value)} />
+                  <EditField label="% encaje" type="number" value={formValues.collateralPercentage} onChange={(value) => updateField("collateralPercentage", value)} />
                   <div className="rounded-lg border border-border bg-surface-muted px-3 py-2">
                     <p className="text-xs font-medium text-muted">Valor CF calculado</p>
                     <p className="mt-1 text-sm font-semibold text-foreground">S/ {calculatedGuaranteeValue.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   </div>
                 </div>
-                <label className="mt-4 block">
-                  <span className="mb-1 block text-xs font-medium text-muted">Observaciones</span>
-                  <textarea
-                    value={formValues.observations}
-                    onChange={(event) => updateField("observations", event.target.value)}
-                    rows={4}
-                    className={inputClassName}
-                  />
-                </label>
               </section>
 
               <footer className="flex justify-end gap-3 border-t border-border pt-5">
