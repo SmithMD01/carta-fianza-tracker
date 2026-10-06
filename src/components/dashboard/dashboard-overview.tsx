@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Guarantee } from "@/types/guarantee";
 import { ColumnFilter } from "@/components/column-filter";
+import { GUARANTEE_STATUSES } from "@/config/business-options";
 
 type DashboardOverviewProps = { guarantees: Guarantee[] };
 
@@ -27,6 +28,7 @@ const questionOptions = [
   { value: "all", label: "Todas las cartas" },
   { value: "convenio", label: "Firma de convenio" },
   { value: "adenda", label: "Firma de adenda" },
+  { value: "solicitadas", label: "Cartas solicitadas" },
   { value: "por-vencer", label: "Cartas próximas a renovar" },
   { value: "encaje-pendiente", label: "¿Cuánto encaje pendiente hay?" },
 ];
@@ -35,6 +37,7 @@ const inputClassName = "rounded-lg border border-border bg-surface px-3 py-2 tex
 
 function matchesQuestion(guarantee: Guarantee, question: string) {
   if (question === "all") return true;
+  if (question === "solicitadas") return guarantee.status === "Solicitud";
   if (question === "por-vencer") return isNearExpiry(guarantee);
   if (question === "encaje-pendiente") return guarantee.projectStage === "Liquidación" && guarantee.status === "Devuelto";
 
@@ -47,7 +50,7 @@ function isActive(guarantee: Guarantee) {
 }
 
 function isNearExpiry(guarantee: Guarantee) {
-  return isActive(guarantee) && guarantee.renewalDays <= 60;
+  return isActive(guarantee) && guarantee.renewalDays >= 0 && guarantee.renewalDays <= 60;
 }
 
 function matchesMultiFilter(value: string, filter: string) {
@@ -57,14 +60,15 @@ function matchesMultiFilter(value: string, filter: string) {
 
 export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
   const [search, setSearch] = useState("");
-  const [selectedYear, setSelectedYear] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedInsurer, setSelectedInsurer] = useState("all");
   const [selectedQuestion, setSelectedQuestion] = useState("all");
   const [columnFilters, setColumnFilters] = useState<DashboardColumnFilters>(initialColumnFilters);
+  const [tablePage, setTablePage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const insurers = useMemo(() => [...new Set(guarantees.map((guarantee) => guarantee.insurerName))], [guarantees]);
-  const years = useMemo(() => [...new Set(guarantees.map((guarantee) => guarantee.expiresAt.slice(0, 4)))], [guarantees]);
-  const statuses = useMemo(() => [...new Set(guarantees.map((guarantee) => guarantee.status))], [guarantees]);
+  const statuses = useMemo(() => [...new Set([...GUARANTEE_STATUSES, ...guarantees.map((guarantee) => guarantee.status)])], [guarantees]);
 
   const filteredGuarantees = useMemo(() => {
     const normalizedSearch = search.toLowerCase().trim();
@@ -74,7 +78,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
         .some((value) => value.toLowerCase().includes(normalizedSearch));
 
       return matchesSearch &&
-        (selectedYear === "all" || guarantee.expiresAt.startsWith(selectedYear)) &&
+        (selectedStatus === "all" || guarantee.status === selectedStatus) &&
         (selectedInsurer === "all" || guarantee.insurerName === selectedInsurer) &&
         matchesQuestion(guarantee, selectedQuestion) &&
         guarantee.guaranteeNumber.toLowerCase().includes(columnFilters.guaranteeNumber.toLowerCase()) &&
@@ -83,21 +87,23 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
         guarantee.guaranteeReason.toLowerCase().includes(columnFilters.reason.toLowerCase()) &&
         matchesMultiFilter(guarantee.status, columnFilters.status);
     });
-  }, [guarantees, search, selectedYear, selectedInsurer, selectedQuestion, columnFilters]);
+  }, [guarantees, search, selectedStatus, selectedInsurer, selectedQuestion, columnFilters]);
 
   const updateColumnFilter = (field: keyof DashboardColumnFilters, value: string) => {
+    setTablePage(1);
     setColumnFilters((currentFilters) => ({ ...currentFilters, [field]: value }));
   };
 
   const clearAllFilters = () => {
     setSearch("");
-    setSelectedYear("all");
+    setSelectedStatus("all");
     setSelectedInsurer("all");
     setSelectedQuestion("all");
+    setTablePage(1);
     setColumnFilters(initialColumnFilters);
   };
 
-  const hasActiveFilters = search || selectedYear !== "all" || selectedInsurer !== "all" || selectedQuestion !== "all" || Object.values(columnFilters).some(Boolean);
+  const hasActiveFilters = search || selectedStatus !== "all" || selectedInsurer !== "all" || selectedQuestion !== "all" || Object.values(columnFilters).some(Boolean);
 
   const insurerSummary = useMemo(() => {
     return insurers.map((insurer) => ({
@@ -109,7 +115,15 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
   const expiringGuarantees = filteredGuarantees.filter(isNearExpiry).sort((a, b) => a.renewalDays - b.renewalDays).slice(0, 5);
   const orderedGuarantees = selectedQuestion === "por-vencer"
     ? [...filteredGuarantees].sort((a, b) => a.renewalDays - b.renewalDays)
-    : filteredGuarantees;
+    : selectedQuestion === "solicitadas"
+      ? [...filteredGuarantees].sort((a, b) => a.validFrom.localeCompare(b.validFrom))
+      : filteredGuarantees;
+  const totalPages = Math.max(1, Math.ceil(orderedGuarantees.length / pageSize));
+  const currentPage = Math.min(tablePage, totalPages);
+  const paginatedGuarantees = orderedGuarantees.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
   const totalValue = filteredGuarantees.reduce((total, guarantee) => total + guarantee.guaranteeValue, 0);
   const activeCount = filteredGuarantees.filter(isActive).length;
   const expiringCount = filteredGuarantees.filter(isNearExpiry).length;
@@ -121,7 +135,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
   return (
     <div className="mt-6 space-y-5">
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Cartas registradas" value={String(filteredGuarantees.length)} detail="Resultado actual" />
+        <KpiCard label="Cartas solicitadas" value={String(filteredGuarantees.filter((guarantee) => guarantee.status === "Solicitud").length)} detail="Pendientes de gestión" />
         <KpiCard label="Cartas activas" value={String(activeCount)} detail="Vigentes o en renovación" />
         <KpiCard label="Próximas a renovar" value={String(expiringCount)} detail="Requieren seguimiento" />
         <KpiCard label={summaryLabel} value={`S/ ${summaryAmount.toLocaleString("es-PE")}`} detail={selectedQuestion === "encaje-pendiente" ? "Pendiente de recuperación" : `Valor CF: S/ ${totalValue.toLocaleString("es-PE")}`} />
@@ -167,12 +181,12 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
           <p className="mt-1 text-sm text-muted">Vista simplificada con los mismos filtros del módulo completo</p>
           <div className="mt-4 grid gap-4 xl:grid-cols-3">
             <div className="space-y-3 xl:col-span-2">
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar carta, entidad u obra..." className={`${inputClassName} w-full`} />
-              <select value={selectedQuestion} onChange={(event) => setSelectedQuestion(event.target.value)} className={`${inputClassName} w-full`}>{questionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+              <input value={search} onChange={(event) => { setSearch(event.target.value); setTablePage(1); }} placeholder="Buscar carta, entidad u obra..." className={`${inputClassName} w-full`} />
+              <select value={selectedQuestion} onChange={(event) => { setSelectedQuestion(event.target.value); setTablePage(1); }} className={`${inputClassName} w-full`}>{questionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
             </div>
             <div className="space-y-3 xl:col-span-1">
-              <select value={selectedYear} onChange={(event) => setSelectedYear(event.target.value)} className={`${inputClassName} w-full`}><option value="all">Todos los años</option>{years.map((year) => <option key={year} value={year}>{year}</option>)}</select>
-              <select value={selectedInsurer} onChange={(event) => setSelectedInsurer(event.target.value)} className={`${inputClassName} w-full`}><option value="all">Todas las aseguradoras</option>{insurers.map((insurer) => <option key={insurer} value={insurer}>{insurer}</option>)}</select>
+              <select value={selectedStatus} onChange={(event) => { setSelectedStatus(event.target.value); setTablePage(1); }} className={`${inputClassName} w-full`}><option value="all">Todos los estados</option>{statuses.map((status) => <option key={status} value={status}>{status}</option>)}</select>
+              <select value={selectedInsurer} onChange={(event) => { setSelectedInsurer(event.target.value); setTablePage(1); }} className={`${inputClassName} w-full`}><option value="all">Todas las aseguradoras</option>{insurers.map((insurer) => <option key={insurer} value={insurer}>{insurer}</option>)}</select>
             </div>
           </div>
           <div className="mt-3 flex justify-end">
@@ -199,12 +213,30 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
               <th className="px-4 py-3">Valor carta</th><th className="px-4 py-3">Vencimiento</th><th className="px-4 py-3">Días restantes</th>
             </tr></thead>
             <tbody className="divide-y divide-border">
-              {orderedGuarantees.map((guarantee, index) => <tr key={guarantee.id} className={isActive(guarantee) ? "bg-emerald-50/50" : "hover:bg-surface-muted"}><td className="px-4 py-3 text-muted">{String(index + 1).padStart(2, "0")}</td><td className="px-4 py-3 font-semibold">{guarantee.guaranteeNumber}</td><td className="px-4 py-3 font-semibold">{guarantee.entityName}</td><td className="px-4 py-3 font-semibold">{guarantee.projectName}</td><td className="px-4 py-3 text-muted">{guarantee.guaranteeReason}</td><td className="px-4 py-3"><span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">{guarantee.status}</span></td><td className="whitespace-nowrap px-4 py-3 font-semibold">S/ {guarantee.guaranteeValue.toLocaleString("es-PE")}</td><td className="whitespace-nowrap px-4 py-3 text-muted">{guarantee.expiresAt}</td><td className="px-4 py-3 text-muted">{guarantee.renewalDays} días</td></tr>)}
+              {paginatedGuarantees.map((guarantee, index) => <tr key={guarantee.id} className={isActive(guarantee) ? "bg-emerald-50/50" : "hover:bg-surface-muted"}><td className="px-4 py-3 text-muted">{String((currentPage - 1) * pageSize + index + 1).padStart(2, "0")}</td><td className="px-4 py-3 font-semibold">{guarantee.guaranteeNumber}</td><td className="px-4 py-3 font-semibold">{guarantee.entityName}</td><td className="px-4 py-3 font-semibold">{guarantee.projectName}</td><td className="px-4 py-3 text-muted">{guarantee.guaranteeReason}</td><td className="px-4 py-3"><span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">{guarantee.status}</span></td><td className="whitespace-nowrap px-4 py-3 font-semibold">S/ {guarantee.guaranteeValue.toLocaleString("es-PE")}</td><td className="whitespace-nowrap px-4 py-3 text-muted">{guarantee.expiresAt}</td><td className="px-4 py-3 text-muted">{guarantee.renewalDays} días</td></tr>)}
               {filteredGuarantees.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted">No hay cartas para los filtros seleccionados.</td></tr>}
             </tbody>
           </table>
         </div>
-        <footer className="border-t border-border px-5 py-3 text-sm text-muted">Mostrando {filteredGuarantees.length} cartas según la consulta actual</footer>
+        <footer className="flex flex-col gap-3 border-t border-border px-5 py-3 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
+          <span>Mostrando {orderedGuarantees.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, orderedGuarantees.length)} de {orderedGuarantees.length} cartas</span>
+          <div className="flex items-center gap-2">
+            <label htmlFor="dashboard-page-size" className="whitespace-nowrap text-xs">Filas por página:</label>
+            <select
+              id="dashboard-page-size"
+              value={pageSize}
+              onChange={(event) => { setPageSize(Number(event.target.value)); setTablePage(1); }}
+              className="rounded-lg border border-border bg-surface px-2 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={30}>30</option>
+            </select>
+            <button type="button" onClick={() => setTablePage((page) => Math.max(1, page - 1))} disabled={currentPage === 1} className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40">Anterior</button>
+            <span className="text-xs">Página {currentPage} de {totalPages}</span>
+            <button type="button" onClick={() => setTablePage((page) => Math.min(totalPages, page + 1))} disabled={currentPage === totalPages} className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40">Siguiente</button>
+          </div>
+        </footer>
       </section>
     </div>
   );

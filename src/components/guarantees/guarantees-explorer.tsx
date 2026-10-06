@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { Guarantee } from "@/types/guarantee";
 import { GuaranteeEditModal } from "@/components/guarantees/guarantee-edit-modal";
 import { ColumnFilter } from "@/components/column-filter";
+import { GUARANTEE_STATUSES } from "@/config/business-options";
 
 type GuaranteesExplorerProps = {
   guarantees: Guarantee[];
@@ -107,7 +108,7 @@ export function GuaranteesExplorer({
     ),
   ];
 
-  const statuses = [...new Set(guarantees.map((guarantee) => guarantee.status))];
+  const statuses = [...new Set([...GUARANTEE_STATUSES, ...guarantees.map((guarantee) => guarantee.status)])];
   const requestStatuses = [...new Set(guarantees.map((guarantee) => guarantee.requestStatus))];
   const guaranteeGroups = [...new Set(guarantees.flatMap((guarantee) => guarantee.guaranteeGroups))];
   const projectStages = [...new Set(guarantees.map((guarantee) => guarantee.projectStage))];
