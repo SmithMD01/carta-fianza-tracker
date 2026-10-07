@@ -29,7 +29,7 @@ export default function ProyectosPage() {
           </p>
         </div>
 
-        <ProjectCreateModal />
+        <ProjectCreateModal onSave={saveProject} />
       </header>
 
       <ProjectsTable projects={projects} onSaveProject={saveProject} />

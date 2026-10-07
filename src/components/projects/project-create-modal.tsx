@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PROJECT_ORIGINS, PROJECT_STAGES } from "@/config/business-options";
 import type { Project } from "@/types/project";
+import { createProjectAction } from "@/app/proyectos/actions";
 
 type ProjectCreateModalProps = {
   project?: Project;
@@ -126,6 +127,8 @@ function SelectField({
 }
 
 export function ProjectCreateModal({ project, onSave, menuItem = false }: ProjectCreateModalProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState(""); 
   const [isOpen, setIsOpen] = useState(false);
   const [formValues, setFormValues] = useState<ProjectFormValues>(() => createInitialValues(project));
 
@@ -144,19 +147,49 @@ export function ProjectCreateModal({ project, onSave, menuItem = false }: Projec
     setFormValues(createInitialValues(project));
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
+    setSubmissionError("");
+    setIsSubmitting(true);
 
-    const projectDraft: Project = {
-      id: project?.id ?? crypto.randomUUID(),
-      ...formValues,
-      projectValue: Number(formValues.projectValue),
-      activeGuarantees: project?.activeGuarantees ?? 0,
-    };
+    try {
+      const projectDraft: Project = {
+        id: project?.id ?? crypto.randomUUID(),
+        ...formValues,
+        projectValue: Number(formValues.projectValue),
+        activeGuarantees: project?.activeGuarantees ?? 0,
+      };
 
-    onSave?.(projectDraft);
-    console.log(project ? "Proyecto actualizado:" : "Proyecto registrado:", projectDraft);
-    closeModal();
+      if (project) {
+        onSave?.(projectDraft);
+      } else {
+        const savedProject = await createProjectAction({
+          projectCode: formValues.projectCode,
+          cui: formValues.cui,
+          referenceName: formValues.referenceName,
+          formalName: formValues.formalName,
+          entityName: formValues.entityName,
+          projectValue: Number(formValues.projectValue),
+          selectionProcess: formValues.selectionProcess,
+          consortiumWith: formValues.consortiumWith,
+          wonWith: formValues.wonWith,
+          projectStage: formValues.projectStage,
+        });
+
+        onSave?.(savedProject);
+      }
+
+      closeModal();
+    } catch (error) {
+      console.error(error);
+      setSubmissionError(
+        "No se pudo guardar el proyecto. Verifica los datos e inténtalo nuevamente.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -244,9 +277,24 @@ export function ProjectCreateModal({ project, onSave, menuItem = false }: Projec
                 <button type="button" onClick={closeModal} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-muted">
                   Cancelar
                 </button>
-                <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark">
+                {/* <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark">
                   Registrar proyecto
+                </button> */}
+                
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting ? "Guardando..." : project ? "Guardar cambios" : "Registrar proyecto"}
                 </button>
+
+                {submissionError && (
+                  <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {submissionError}
+                  </p>
+                )}
+
               </footer>
             </form>
           </div>
