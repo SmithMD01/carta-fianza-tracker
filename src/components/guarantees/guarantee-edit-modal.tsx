@@ -6,6 +6,7 @@ import { getGuaranteeReasonsForOrigin, REQUESTING_AREAS } from "@/config/busines
 
 type GuaranteeEditModalProps = {
   guarantee: Guarantee;
+  menuItem?: boolean;
 };
 
 type EditFormValues = {
@@ -83,7 +84,7 @@ function EditField({
   );
 }
 
-export function GuaranteeEditModal({ guarantee }: GuaranteeEditModalProps) {
+export function GuaranteeEditModal({ guarantee, menuItem = false }: GuaranteeEditModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [formValues, setFormValues] = useState(() => createInitialValues(guarantee));
   const availableReasons = Array.from(new Set([
@@ -143,7 +144,7 @@ export function GuaranteeEditModal({ guarantee }: GuaranteeEditModalProps) {
       <button
         type="button"
         onClick={openModal}
-        className="rounded-md border border-border px-2 py-1 text-xs font-medium text-primary hover:bg-surface-muted"
+        className={menuItem ? "block w-full rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface-muted" : "rounded-md border border-border px-2 py-1 text-xs font-medium text-primary hover:bg-surface-muted"}
       >
         Editar
       </button>

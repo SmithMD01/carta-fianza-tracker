@@ -14,6 +14,7 @@ type DashboardColumnFilters = {
   projectName: string;
   reason: string;
   status: string;
+  guaranteeGroups: string;
 };
 
 const initialColumnFilters: DashboardColumnFilters = {
@@ -22,6 +23,7 @@ const initialColumnFilters: DashboardColumnFilters = {
   projectName: "",
   reason: "",
   status: "",
+  guaranteeGroups: "",
 };
 
 const questionOptions = [
@@ -69,6 +71,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
 
   const insurers = useMemo(() => [...new Set(guarantees.map((guarantee) => guarantee.insurerName))], [guarantees]);
   const statuses = useMemo(() => [...new Set([...GUARANTEE_STATUSES, ...guarantees.map((guarantee) => guarantee.status)])], [guarantees]);
+  const guaranteeGroups = useMemo(() => [...new Set(guarantees.flatMap((guarantee) => guarantee.guaranteeGroups))], [guarantees]);
 
   const filteredGuarantees = useMemo(() => {
     const normalizedSearch = search.toLowerCase().trim();
@@ -85,7 +88,8 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
         guarantee.entityName.toLowerCase().includes(columnFilters.entity.toLowerCase()) &&
         guarantee.projectName.toLowerCase().includes(columnFilters.projectName.toLowerCase()) &&
         guarantee.guaranteeReason.toLowerCase().includes(columnFilters.reason.toLowerCase()) &&
-        matchesMultiFilter(guarantee.status, columnFilters.status);
+        matchesMultiFilter(guarantee.status, columnFilters.status) &&
+        (!columnFilters.guaranteeGroups || columnFilters.guaranteeGroups.split("|").some((group) => guarantee.guaranteeGroups.includes(group)));
     });
   }, [guarantees, search, selectedStatus, selectedInsurer, selectedQuestion, columnFilters]);
 
@@ -144,7 +148,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
       <section className="grid gap-5 xl:grid-cols-[1fr_1.35fr]">
         <section className="rounded-xl border border-border bg-surface px-5 py-4">
           <div className="flex items-start justify-between gap-3">
-            <div><h2 className="text-base font-bold text-foreground">Cartas por aseguradora</h2><p className="mt-1 text-sm text-muted">Distribución del resultado filtrado</p></div>
+            <div><h2 className="text-base font-bold text-foreground">Cartas por aseguradora</h2></div>
             <Link href="/cartas-fianza" className="text-sm font-semibold text-primary hover:underline">Ver módulo →</Link>
           </div>
           <div className="mt-5 space-y-4">
@@ -160,7 +164,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
 
         <section className="rounded-xl border border-border bg-surface px-5 py-4">
           <div className="flex items-start justify-between gap-3">
-            <div><h2 className="text-base font-bold text-foreground">Cartas próximas a renovar</h2><p className="mt-1 text-sm text-muted">Cartas activas que requieren seguimiento</p></div>
+            <div><h2 className="text-base font-bold text-foreground">Cartas próximas a renovar</h2></div>
             <Link href="/cartas-fianza" className="text-sm font-semibold text-primary hover:underline">Ver detalle →</Link>
           </div>
           <div className="mt-4 overflow-x-auto">
@@ -178,23 +182,22 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
       <section className="overflow-hidden rounded-xl border border-border bg-surface">
         <header className="border-b border-border px-5 py-4">
           <h2 className="text-base font-bold text-foreground">Resumen de cartas fianza</h2>
-          <p className="mt-1 text-sm text-muted">Vista simplificada con los mismos filtros del módulo completo</p>
-          <div className="mt-4 grid gap-4 xl:grid-cols-3">
-            <div className="space-y-3 xl:col-span-2">
-              <input value={search} onChange={(event) => { setSearch(event.target.value); setTablePage(1); }} placeholder="Buscar carta, entidad u obra..." className={`${inputClassName} w-full`} />
-              <select value={selectedQuestion} onChange={(event) => { setSelectedQuestion(event.target.value); setTablePage(1); }} className={`${inputClassName} w-full`}>{questionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+          <div className="mt-4 grid gap-3 xl:grid-cols-12">
+            <input value={search} onChange={(event) => { setSearch(event.target.value); setTablePage(1); }} placeholder="Buscar carta, entidad u obra..." className={`${inputClassName} w-full text-xs xl:col-span-6`} />
+            <select value={selectedStatus} onChange={(event) => { setSelectedStatus(event.target.value); setTablePage(1); }} className={`${inputClassName} w-full text-xs xl:col-span-3`}><option value="all">Todos los estados</option>{statuses.map((status) => <option key={status} value={status}>{status}</option>)}</select>
+            <div className="xl:col-span-3">
+              <ColumnFilter label="agrupación" value={columnFilters.guaranteeGroups} onChange={(value) => updateColumnFilter("guaranteeGroups", value)} options={guaranteeGroups} multiple appearance="select" />
             </div>
-            <div className="space-y-3 xl:col-span-1">
-              <select value={selectedStatus} onChange={(event) => { setSelectedStatus(event.target.value); setTablePage(1); }} className={`${inputClassName} w-full`}><option value="all">Todos los estados</option>{statuses.map((status) => <option key={status} value={status}>{status}</option>)}</select>
-              <select value={selectedInsurer} onChange={(event) => { setSelectedInsurer(event.target.value); setTablePage(1); }} className={`${inputClassName} w-full`}><option value="all">Todas las aseguradoras</option>{insurers.map((insurer) => <option key={insurer} value={insurer}>{insurer}</option>)}</select>
+            <div className="flex min-w-0 items-center gap-3 xl:col-span-6">
+              <label htmlFor="dashboard-question-filter" className="shrink-0 text-xs font-semibold text-foreground">Responder pregunta:</label>
+              <select id="dashboard-question-filter" value={selectedQuestion} onChange={(event) => { setSelectedQuestion(event.target.value); setTablePage(1); }} className="min-w-0 flex-1 rounded-lg border border-primary bg-primary-soft px-3 py-2 text-xs font-semibold text-primary outline-none focus:ring-2 focus:ring-primary/20">{questionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
             </div>
-          </div>
-          <div className="mt-3 flex justify-end">
+            <select value={selectedInsurer} onChange={(event) => { setSelectedInsurer(event.target.value); setTablePage(1); }} className={`${inputClassName} w-full text-xs xl:col-span-3`}><option value="all">Todas las aseguradoras</option>{insurers.map((insurer) => <option key={insurer} value={insurer}>{insurer}</option>)}</select>
             <button
               type="button"
               onClick={clearAllFilters}
               disabled={!hasActiveFilters}
-              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-40"
+              className="w-full rounded-lg border border-primary bg-primary px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:border-border disabled:bg-surface disabled:text-muted xl:col-span-3"
             >
               Limpiar filtros
             </button>

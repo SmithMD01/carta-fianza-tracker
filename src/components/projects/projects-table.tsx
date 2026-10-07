@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Project } from "@/types/project";
 import { ProjectCreateModal } from "@/components/projects/project-create-modal";
+import { RowActionsMenu } from "@/components/row-actions-menu";
 
 type ProjectsTableProps = {
   projects: Project[];
@@ -12,6 +13,8 @@ type ProjectsTableProps = {
 
 export function ProjectsTable({ projects, onSaveProject }: ProjectsTableProps) {
   const [search, setSearch] = useState("");
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filteredProjects = useMemo(() => {
     const normalizedSearch = search.toLowerCase().trim();
@@ -30,22 +33,24 @@ export function ProjectsTable({ projects, onSaveProject }: ProjectsTableProps) {
     );
   }, [projects, search]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / pageSize));
+  const visiblePage = Math.min(currentPage, totalPages);
+  const paginatedProjects = filteredProjects.slice((visiblePage - 1) * pageSize, visiblePage * pageSize);
+  const firstVisibleRow = filteredProjects.length === 0 ? 0 : (visiblePage - 1) * pageSize + 1;
+  const lastVisibleRow = Math.min(visiblePage * pageSize, filteredProjects.length);
+
   return (
     <section className="mt-8 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
-      <header className="flex flex-col gap-4 border-b border-border px-6 py-5 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Proyectos</h1>
-          <p className="mt-1 text-sm text-muted">
-            Listado de proyectos registrados y acceso a su historial de cartas fianza.
-          </p>
-        </div>
-
+      <header className="flex justify-end border-b border-border px-6 py-4">
         <label className="block w-full md:max-w-sm">
           <span className="sr-only">Buscar proyecto</span>
           <input
             type="search"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Buscar proyecto..."
             className="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:border-primary"
           />
@@ -73,7 +78,7 @@ export function ProjectsTable({ projects, onSaveProject }: ProjectsTableProps) {
           </thead>
 
           <tbody className="divide-y divide-border">
-            {filteredProjects.map((project) => (
+            {paginatedProjects.map((project) => (
               <tr key={project.id} className="hover:bg-surface-muted">
                 <td className="px-6 py-4">
                   <Link href={`/proyectos/${project.id}`} className="font-semibold text-primary hover:underline">
@@ -91,15 +96,12 @@ export function ProjectsTable({ projects, onSaveProject }: ProjectsTableProps) {
                 </td>
                 <td className="px-6 py-4 text-muted">{project.projectStage}</td>
                 <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/proyectos/${project.id}`}
-                      className="inline-flex whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft"
-                    >
+                  <RowActionsMenu>
+                    <Link href={`/proyectos/${project.id}`} className="block rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface-muted">
                       Ver detalle
                     </Link>
-                    <ProjectCreateModal project={project} onSave={onSaveProject} />
-                  </div>
+                    <ProjectCreateModal project={project} onSave={onSaveProject} menuItem />
+                  </RowActionsMenu>
                 </td>
               </tr>
             ))}
@@ -115,11 +117,26 @@ export function ProjectsTable({ projects, onSaveProject }: ProjectsTableProps) {
         </table>
       </div>
 
-      <footer className="flex items-center justify-between border-t border-border px-6 py-4 text-sm text-muted">
-        <span>{filteredProjects.length} proyectos registrados</span>
-        <div className="flex gap-2">
-          <button className="rounded-lg bg-primary px-3 py-1.5 text-white">1</button>
-          <button className="rounded-lg border border-border px-3 py-1.5">2</button>
+      <footer className="flex flex-col gap-3 border-t border-border px-6 py-4 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
+        <span>{filteredProjects.length === 0 ? "No hay registros para mostrar" : `Mostrando ${firstVisibleRow}-${lastVisibleRow} de ${filteredProjects.length} proyectos`}</span>
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <label htmlFor="project-page-size" className="whitespace-nowrap">Filas por página:</label>
+          <select
+            id="project-page-size"
+            value={pageSize}
+            onChange={(event) => {
+              setPageSize(Number(event.target.value));
+              setCurrentPage(1);
+            }}
+            className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={30}>30</option>
+          </select>
+          <button type="button" disabled={visiblePage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} className="rounded-lg border border-border px-3 py-1.5 text-foreground disabled:cursor-not-allowed disabled:opacity-40">Anterior</button>
+          <span className="whitespace-nowrap text-foreground">Página {visiblePage} de {totalPages}</span>
+          <button type="button" disabled={visiblePage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} className="rounded-lg border border-border px-3 py-1.5 text-foreground disabled:cursor-not-allowed disabled:opacity-40">Siguiente</button>
         </div>
       </footer>
     </section>

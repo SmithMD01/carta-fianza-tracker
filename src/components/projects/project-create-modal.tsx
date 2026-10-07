@@ -7,6 +7,7 @@ import type { Project } from "@/types/project";
 type ProjectCreateModalProps = {
   project?: Project;
   onSave?: (project: Project) => void;
+  menuItem?: boolean;
 };
 
 type ProjectFormValues = {
@@ -124,7 +125,7 @@ function SelectField({
   );
 }
 
-export function ProjectCreateModal({ project, onSave }: ProjectCreateModalProps) {
+export function ProjectCreateModal({ project, onSave, menuItem = false }: ProjectCreateModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [formValues, setFormValues] = useState<ProjectFormValues>(() => createInitialValues(project));
 
@@ -166,7 +167,9 @@ export function ProjectCreateModal({ project, onSave }: ProjectCreateModalProps)
           setFormValues(createInitialValues(project));
           setIsOpen(true);
         }}
-        className={project
+        className={menuItem
+          ? "block w-full rounded-md px-3 py-2 text-left text-xs font-medium text-foreground hover:bg-surface-muted"
+          : project
           ? "inline-flex rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary-soft"
           : "rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"}
       >

@@ -20,10 +20,17 @@ export default function ProyectosPage() {
 
   return (
     <section>
-      <div className="flex items-end justify-between">
-        <p className="text-sm font-medium text-primary">Gestión</p>
+      <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-sm font-medium text-primary">Gestión</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">Proyectos</h1>
+          <p className="mt-1 text-sm text-muted">
+            Listado de proyectos registrados y acceso a su historial de cartas fianza.
+          </p>
+        </div>
+
         <ProjectCreateModal />
-      </div>
+      </header>
 
       <ProjectsTable projects={projects} onSaveProject={saveProject} />
     </section>

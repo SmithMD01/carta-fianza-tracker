@@ -3,7 +3,9 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import type { Guarantee } from "@/types/guarantee";
 import { GuaranteeEditModal } from "@/components/guarantees/guarantee-edit-modal";
+import { GuaranteeDetailModal } from "@/components/guarantees/guarantee-detail-modal";
 import { ColumnFilter } from "@/components/column-filter";
+import { RowActionsMenu } from "@/components/row-actions-menu";
 import { GUARANTEE_STATUSES } from "@/config/business-options";
 
 type GuaranteesExplorerProps = {
@@ -535,7 +537,13 @@ export function GuaranteesExplorer({
                           ) : getGuaranteeColumnValue(guarantee, column)}
                         </td>
                       ))}
-                      <td className="px-3 py-2 text-xs"><GuaranteeEditModal guarantee={guarantee} /></td>
+                      <td className="px-3 py-2 text-xs">
+                        <RowActionsMenu>
+                          <GuaranteeDetailModal guarantee={guarantee} />
+                          <GuaranteeEditModal guarantee={guarantee} menuItem />
+                          <button type="button" disabled className="block w-full rounded-md px-3 py-2 text-left text-xs font-medium text-muted disabled:cursor-not-allowed">Renovar</button>
+                        </RowActionsMenu>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

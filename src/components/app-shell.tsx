@@ -50,6 +50,11 @@ function NavigationIcon({ icon }: { icon: NavigationIcon }) {
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const currentModule = pathname.startsWith("/proyectos")
+    ? "Proyectos"
+    : pathname.startsWith("/cartas-fianza")
+      ? "Cartas Fianza"
+      : "Dashboard";
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -146,7 +151,7 @@ export function AppShell({ children }: AppShellProps) {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex h-16 items-center justify-between border-b border-border bg-surface px-6">
             <p className="text-sm text-muted">
-              Sistema Gestión / <span className="font-medium text-foreground">Cartas Fianza</span>
+              Sistema Gestión / <span className="font-medium text-foreground">{currentModule}</span>
             </p>
           </header>
 
