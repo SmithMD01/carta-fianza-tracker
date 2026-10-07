@@ -34,7 +34,7 @@ const initialFormValues: ProjectFormValues = {
   selectionProcess: "",
   consortiumWith: "",
   wonWith: "",
-  projectStage: PROJECT_STAGES[0],
+  projectStage: "",
 };
 
 function createInitialValues(project?: Project): ProjectFormValues {
@@ -94,6 +94,7 @@ type SelectFieldProps = {
   value: string;
   options: string[];
   required?: boolean;
+  placeholder?: string;
   onChange: (value: string) => void;
 };
 
@@ -102,6 +103,7 @@ function SelectField({
   value,
   options,
   required = false,
+  placeholder = "Seleccionar una opción",
   onChange,
 }: SelectFieldProps) {
   return (
@@ -116,6 +118,7 @@ function SelectField({
         onChange={(event) => onChange(event.target.value)}
         className={inputClassName}
       >
+        <option value="" disabled>{placeholder}</option>
         {options.map((option) => (
           <option key={option} value={option}>
             {option}
@@ -261,7 +264,7 @@ export function ProjectCreateModal({ project, onSave, menuItem = false }: Projec
                   <InputField label="Valor del proyecto" type="number" value={formValues.projectValue} required onChange={(value) => updateField("projectValue", value)} />
                   <InputField label="Proceso de selección" value={formValues.selectionProcess} onChange={(value) => updateField("selectionProcess", value)} />
                   <InputField label="Consorciado con" value={formValues.consortiumWith} onChange={(value) => updateField("consortiumWith", value)} />
-                  <SelectField label="Ganado con" value={formValues.wonWith} options={[...PROJECT_ORIGINS]} required onChange={(value) => updateField("wonWith", value)} />
+                  <SelectField label="Ganado con" value={formValues.wonWith} options={[...PROJECT_ORIGINS]} placeholder="Seleccionar una opción" required onChange={(value) => updateField("wonWith", value)} />
                 </div>
               </section>
 
@@ -270,7 +273,7 @@ export function ProjectCreateModal({ project, onSave, menuItem = false }: Projec
                   Etapa del proyecto
                 </h3>
 
-                <SelectField label="Etapa del proyecto" value={formValues.projectStage} options={[...PROJECT_STAGES]} required onChange={(value) => updateField("projectStage", value)} />
+                <SelectField label="Etapa del proyecto" value={formValues.projectStage} options={[...PROJECT_STAGES]} placeholder="Seleccionar una opción" required onChange={(value) => updateField("projectStage", value)} />
               </section>
 
               <footer className="flex justify-end gap-3 border-t border-border pt-5">
