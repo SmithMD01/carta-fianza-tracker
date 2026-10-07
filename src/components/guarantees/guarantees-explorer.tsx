@@ -8,11 +8,7 @@ import { ColumnFilter } from "@/components/column-filter";
 import { RowActionsMenu } from "@/components/row-actions-menu";
 import { GUARANTEE_STATUSES } from "@/config/business-options";
 import type { GuaranteeQuestion } from "@/types/guarantee-filters";
-import {
-  getGuaranteeRemainingDays,
-  matchesGuaranteeQuestion,
-  matchesMultiValueFilter,
-} from "@/lib/guarantees/guarantee-filter-rules";
+import { getGuaranteeRemainingDays } from "@/lib/guarantees/guarantee-filter-rules";
 import {
   createInitialGuaranteeColumnFilters,
   GUARANTEE_QUESTION_OPTIONS,
@@ -22,6 +18,7 @@ type GuaranteesExplorerProps = {
 };
 import type { GuaranteeColumnFilters } from "@/types/guarantee-filters";
 import { filterGuarantees } from "@/lib/guarantees/filter-guarantees";
+import { DataTablePagination } from "../data-table/data-table-pagination";
 
 
 type GuaranteeColumnKey =
@@ -295,10 +292,7 @@ export function GuaranteesExplorer({
     ? parseSavedColumns(savedColumnSnapshot)
     : visibleColumns;
 
-  const firstVisibleRow = filteredGuarantees.length === 0
-    ? 0
-    : (visiblePage - 1) * pageSize + 1;
-  const lastVisibleRow = Math.min(visiblePage * pageSize, filteredGuarantees.length);
+
   const totalFilteredValue = filteredGuarantees.reduce(
     (total, guarantee) => total + guarantee.guaranteeValue,
     0,
@@ -443,49 +437,19 @@ export function GuaranteesExplorer({
                 </tbody>
               </table>
             </section>
-            <footer className="flex flex-col gap-3 border-t border-border px-4 py-3 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
-              <p>
-                {filteredGuarantees.length === 0
-                  ? "No hay registros para mostrar"
-                  : `Mostrando ${firstVisibleRow}-${lastVisibleRow} de ${filteredGuarantees.length} registros`}
-              </p>
-
-              <div className="flex flex-wrap items-center justify-end gap-3">
-                <label htmlFor="page-size" className="whitespace-nowrap">
-                  Filas por página:
-                </label>
-                <select
-                  id="page-size"
-                  value={pageSize}
-                  onChange={(event) => setPageSize(Number(event.target.value))}
-                  className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
-                >
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={30}>30</option>
-                </select>
-                <button
-                  type="button"
-                  disabled={visiblePage === 1}
-                  onClick={() => setCurrentPage((page) => Math.max(1, Math.min(page, totalPages) - 1))}
-                  className="rounded-lg border border-border px-3 py-1.5 text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Anterior
-                </button>
-                <span className="whitespace-nowrap text-foreground">
-                  Página {visiblePage} de {totalPages}
-                </span>
-                <button
-                  type="button"
-                  disabled={visiblePage === totalPages}
-                  onClick={() => setCurrentPage((page) => Math.min(totalPages, Math.min(page, totalPages) + 1))}
-                  className="rounded-lg border border-border px-3 py-1.5 text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  Siguiente
-                </button>
-              </div>
-            </footer>
-        </section>
+            <DataTablePagination
+              currentPage={visiblePage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalRows={filteredGuarantees.length}
+              itemLabel="cartas fianza"
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setCurrentPage(1);
+              }}
+            />
+          </section>
     </div>
   );
 }

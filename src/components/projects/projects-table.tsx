@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Project } from "@/types/project";
 import { ProjectCreateModal } from "@/components/projects/project-create-modal";
 import { RowActionsMenu } from "@/components/row-actions-menu";
+import {DataTablePagination} from "@/components/data-table/data-table-pagination";
 
 type ProjectsTableProps = {
   projects: Project[];
@@ -36,8 +37,6 @@ export function ProjectsTable({ projects, onSaveProject }: ProjectsTableProps) {
   const totalPages = Math.max(1, Math.ceil(filteredProjects.length / pageSize));
   const visiblePage = Math.min(currentPage, totalPages);
   const paginatedProjects = filteredProjects.slice((visiblePage - 1) * pageSize, visiblePage * pageSize);
-  const firstVisibleRow = filteredProjects.length === 0 ? 0 : (visiblePage - 1) * pageSize + 1;
-  const lastVisibleRow = Math.min(visiblePage * pageSize, filteredProjects.length);
 
   return (
     <section className="mt-8 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
@@ -117,28 +116,18 @@ export function ProjectsTable({ projects, onSaveProject }: ProjectsTableProps) {
         </table>
       </div>
 
-      <footer className="flex flex-col gap-3 border-t border-border px-6 py-4 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
-        <span>{filteredProjects.length === 0 ? "No hay registros para mostrar" : `Mostrando ${firstVisibleRow}-${lastVisibleRow} de ${filteredProjects.length} proyectos`}</span>
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <label htmlFor="project-page-size" className="whitespace-nowrap">Filas por página:</label>
-          <select
-            id="project-page-size"
-            value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value));
-              setCurrentPage(1);
-            }}
-            className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground outline-none focus:border-primary"
-          >
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={30}>30</option>
-          </select>
-          <button type="button" disabled={visiblePage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} className="rounded-lg border border-border px-3 py-1.5 text-foreground disabled:cursor-not-allowed disabled:opacity-40">Anterior</button>
-          <span className="whitespace-nowrap text-foreground">Página {visiblePage} de {totalPages}</span>
-          <button type="button" disabled={visiblePage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} className="rounded-lg border border-border px-3 py-1.5 text-foreground disabled:cursor-not-allowed disabled:opacity-40">Siguiente</button>
-        </div>
-      </footer>
+      <DataTablePagination
+        currentPage={visiblePage}
+        totalPages={totalPages}
+        pageSize={pageSize}
+        totalRows={filteredProjects.length}
+        itemLabel="proyectos"
+        onPageChange={setCurrentPage}
+        onPageSizeChange={(newPageSize) => {
+          setPageSize(newPageSize);
+          setCurrentPage(1);
+        }}
+      />
     </section>
   );
 }
