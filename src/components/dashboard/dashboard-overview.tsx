@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Guarantee } from "@/types/guarantee";
 import { ColumnFilter } from "@/components/column-filter";
-import { GUARANTEE_STATUSES } from "@/config/business-options";
+import { GUARANTEE_STATUSES, isAddendumGuarantee, isConventionGuarantee } from "@/config/business-options";
 
 type DashboardOverviewProps = { guarantees: Guarantee[] };
 
@@ -32,7 +32,7 @@ const questionOptions = [
   { value: "adenda", label: "Firma de adenda" },
   { value: "solicitadas", label: "Cartas solicitadas" },
   { value: "por-vencer", label: "Cartas próximas a renovar" },
-  { value: "encaje-pendiente", label: "¿Cuánto encaje pendiente hay?" },
+  { value: "encaje-pendiente", label: "¿Cuánto encaje registrado hay?" },
 ];
 
 const inputClassName = "rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary";
@@ -41,7 +41,9 @@ function matchesQuestion(guarantee: Guarantee, question: string) {
   if (question === "all") return true;
   if (question === "solicitadas") return guarantee.status === "Solicitud";
   if (question === "por-vencer") return isNearExpiry(guarantee);
-  if (question === "encaje-pendiente") return guarantee.projectStage === "Liquidación" && guarantee.status === "Devuelto";
+  if (question === "encaje-pendiente") return guarantee.collateral > 0;
+  if (question === "adenda") return guarantee.status === "Solicitud" && isAddendumGuarantee(guarantee.wonWith, guarantee.guaranteeReason);
+  if (question === "convenio") return guarantee.status === "Solicitud" && isConventionGuarantee(guarantee.wonWith, guarantee.guaranteeReason);
 
   return [guarantee.guaranteeReason, guarantee.requestStatus, guarantee.observations]
     .join(" ").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(question);
@@ -133,7 +135,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
   const expiringCount = filteredGuarantees.filter(isNearExpiry).length;
   const collateralValue = filteredGuarantees.reduce((total, guarantee) => total + guarantee.collateral, 0);
   const summaryAmount = selectedQuestion === "encaje-pendiente" ? collateralValue : totalValue;
-  const summaryLabel = selectedQuestion === "encaje-pendiente" ? "Encaje pendiente" : "Encaje registrado";
+  const summaryLabel = "Encaje registrado";
   const maxInsurerCount = Math.max(1, ...insurerSummary.map((item) => item.count));
 
   return (
@@ -142,7 +144,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
         <KpiCard label="Cartas solicitadas" value={String(filteredGuarantees.filter((guarantee) => guarantee.status === "Solicitud").length)} detail="Pendientes de gestión" />
         <KpiCard label="Cartas activas" value={String(activeCount)} detail="Vigentes o en renovación" />
         <KpiCard label="Próximas a renovar" value={String(expiringCount)} detail="Requieren seguimiento" />
-        <KpiCard label={summaryLabel} value={`S/ ${summaryAmount.toLocaleString("es-PE")}`} detail={selectedQuestion === "encaje-pendiente" ? "Pendiente de recuperación" : `Valor CF: S/ ${totalValue.toLocaleString("es-PE")}`} />
+        <KpiCard label={summaryLabel} value={`S/ ${summaryAmount.toLocaleString("es-PE")}`} detail={selectedQuestion === "encaje-pendiente" ? "Suma del encaje registrado" : `Valor CF: S/ ${totalValue.toLocaleString("es-PE")}`} />
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1fr_1.35fr]">

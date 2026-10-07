@@ -6,7 +6,7 @@ import { GuaranteeEditModal } from "@/components/guarantees/guarantee-edit-modal
 import { GuaranteeDetailModal } from "@/components/guarantees/guarantee-detail-modal";
 import { ColumnFilter } from "@/components/column-filter";
 import { RowActionsMenu } from "@/components/row-actions-menu";
-import { GUARANTEE_STATUSES } from "@/config/business-options";
+import { GUARANTEE_STATUSES, isAddendumGuarantee, isConventionGuarantee } from "@/config/business-options";
 
 type GuaranteesExplorerProps = {
   guarantees: Guarantee[];
@@ -138,7 +138,7 @@ const questionOptions = [
   { value: "convenio", label: "Cartas para firma de convenio" },
   { value: "adenda", label: "Cartas para firma de adenda" },
   { value: "por-vencer", label: "Cartas próximas a renovar" },
-  { value: "encaje-pendiente", label: "¿Cuánto encaje pendiente hay?" },
+  { value: "encaje-pendiente", label: "¿Cuánto encaje registrado hay?" },
 ];
 
 function matchesQuestion(guarantee: Guarantee, question: string) {
@@ -147,7 +147,13 @@ function matchesQuestion(guarantee: Guarantee, question: string) {
     return guarantee.status === "Activa" && guarantee.renewalDays >= 0 && guarantee.renewalDays <= 60;
   }
   if (question === "encaje-pendiente") {
-    return guarantee.projectStage === "Liquidación" && guarantee.status === "Devuelto";
+    return guarantee.collateral > 0;
+  }
+  if (question === "adenda") {
+    return guarantee.status === "Solicitud" && isAddendumGuarantee(guarantee.wonWith, guarantee.guaranteeReason);
+  }
+  if (question === "convenio") {
+    return guarantee.status === "Solicitud" && isConventionGuarantee(guarantee.wonWith, guarantee.guaranteeReason);
   }
 
   const searchableText = [
@@ -416,7 +422,7 @@ export function GuaranteesExplorer({
     ? totalPendingCollateral
     : totalFilteredValue;
   const summaryLabel = selectedQuery === "encaje-pendiente"
-    ? "Encaje pendiente"
+    ? "Encaje registrado"
     : "Valor de cartas";
 
 
@@ -438,7 +444,7 @@ export function GuaranteesExplorer({
               S/ {summaryAmount.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="mt-1 text-sm text-muted">
-              {selectedQuery === "encaje-pendiente" ? "Pendiente de recuperación" : "Suma del resultado filtrado"}
+              {selectedQuery === "encaje-pendiente" ? "Suma del encaje registrado" : "Suma del resultado filtrado"}
             </p>
           </div>
         </div>

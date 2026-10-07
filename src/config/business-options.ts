@@ -58,6 +58,28 @@ export const GUARANTEE_GROUPS = [
   "Adicionales",
 ] as const;
 
+export const ADDENDUM_REASON_BY_ORIGIN: Record<string, string> = {
+  Perfil: "CF Ejecución Definitivo de la Obra",
+  IOARR: "CF Ejecución Definitivo de la Obra",
+  "Expediente Técnico": "CF Ejecución Adicional de la Obra",
+  ET: "CF Ejecución Adicional de la Obra",
+};
+
+export function isAddendumGuarantee(wonWith: string, guaranteeReason: string) {
+  return ADDENDUM_REASON_BY_ORIGIN[wonWith] === guaranteeReason;
+}
+
+export const CONVENTION_REASON_BY_ORIGIN: Record<string, string> = {
+  Perfil: "CF Elaboración de Expediente Técnico",
+  IOARR: "CF Elaboración de Documento Equivalente",
+  "Expediente Técnico": "CF Ejecución Eval. de la Obra",
+  ET: "CF Ejecución Eval. de la Obra",
+};
+
+export function isConventionGuarantee(wonWith: string, guaranteeReason: string) {
+  return CONVENTION_REASON_BY_ORIGIN[wonWith] === guaranteeReason;
+}
+
 export function getGuaranteeReasonsForOrigin(origin: string) {
   return GUARANTEE_REASONS_BY_ORIGIN[origin] ?? [];
 }
