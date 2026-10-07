@@ -6,11 +6,23 @@ import { GuaranteeEditModal } from "@/components/guarantees/guarantee-edit-modal
 import { GuaranteeDetailModal } from "@/components/guarantees/guarantee-detail-modal";
 import { ColumnFilter } from "@/components/column-filter";
 import { RowActionsMenu } from "@/components/row-actions-menu";
-import { GUARANTEE_STATUSES, isAddendumGuarantee, isConventionGuarantee } from "@/config/business-options";
-
+import { GUARANTEE_STATUSES } from "@/config/business-options";
+import type { GuaranteeQuestion } from "@/types/guarantee-filters";
+import {
+  getGuaranteeRemainingDays,
+  matchesGuaranteeQuestion,
+  matchesMultiValueFilter,
+} from "@/lib/guarantees/guarantee-filter-rules";
+import {
+  createInitialGuaranteeColumnFilters,
+  GUARANTEE_QUESTION_OPTIONS,
+} from "@/config/guarantee-filter-options";
 type GuaranteesExplorerProps = {
   guarantees: Guarantee[];
 };
+import type { GuaranteeColumnFilters } from "@/types/guarantee-filters";
+import { filterGuarantees } from "@/lib/guarantees/filter-guarantees";
+
 
 type GuaranteeColumnKey =
   | "projectSummary"
@@ -96,93 +108,6 @@ function readSavedColumns(): GuaranteeColumnKey[] {
   return parseSavedColumns(window.localStorage.getItem(COLUMN_PREFERENCE_KEY));
 }
 
-type ColumnFilters = {
-  project: string;
-  projectName: string;
-  insurer: string;
-  guaranteeNumber: string;
-  reason: string;
-  status: string;
-  guaranteeValue: string;
-  projectValue: string;
-  premium: string;
-  collateral: string;
-  collateralPercentage: string;
-  validFrom: string;
-  expiresAt: string;
-  renewalDays: string;
-  guaranteeGroups: string;
-  projectStage: string;
-};
-
-const initialColumnFilters: ColumnFilters = {
-  project: "",
-  projectName: "",
-  insurer: "",
-  guaranteeNumber: "",
-  reason: "",
-  status: "",
-  guaranteeValue: "",
-  projectValue: "",
-  premium: "",
-  collateral: "",
-  collateralPercentage: "",
-  validFrom: "",
-  expiresAt: "",
-  renewalDays: "",
-  guaranteeGroups: "",
-  projectStage: "",
-};
-
-const questionOptions = [
-  { value: "convenio", label: "Cartas para firma de convenio" },
-  { value: "adenda", label: "Cartas para firma de adenda" },
-  { value: "por-vencer", label: "Cartas próximas a renovar" },
-  { value: "encaje-pendiente", label: "¿Cuánto encaje registrado hay?" },
-];
-
-function matchesQuestion(guarantee: Guarantee, question: string) {
-  if (question === "all") return true;
-  if (question === "por-vencer") {
-    return guarantee.status === "Activa" && guarantee.renewalDays >= 0 && guarantee.renewalDays <= 60;
-  }
-  if (question === "encaje-pendiente") {
-    return guarantee.collateral > 0;
-  }
-  if (question === "adenda") {
-    return guarantee.status === "Solicitud" && isAddendumGuarantee(guarantee.wonWith, guarantee.guaranteeReason);
-  }
-  if (question === "convenio") {
-    return guarantee.status === "Solicitud" && isConventionGuarantee(guarantee.wonWith, guarantee.guaranteeReason);
-  }
-
-  const searchableText = [
-    guarantee.guaranteeReason,
-    ...guarantee.guaranteeGroups,
-    guarantee.requestStatus,
-    guarantee.observations,
-  ]
-    .join(" ")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-
-  return searchableText.includes(question);
-}
-
-function matchesMultiFilter(value: string, filter: string) {
-  if (!filter) return true;
-  return filter.split("|").includes(value);
-}
-
-function getRemainingDays(guarantee: Guarantee) {
-  if (guarantee.status !== "Solicitud") return guarantee.renewalDays;
-
-  const startDate = new Date(`${guarantee.validFrom}T00:00:00`);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
 
 function getGuaranteeColumnValue(guarantee: Guarantee, column: GuaranteeColumnKey) {
   switch (column) {
@@ -197,7 +122,7 @@ function getGuaranteeColumnValue(guarantee: Guarantee, column: GuaranteeColumnKe
     case "collateralPercentage":
       return `${guarantee.collateralPercentage}%`;
     case "renewalDays":
-      return `${getRemainingDays(guarantee)} días`;
+      return `${getGuaranteeRemainingDays(guarantee)} días`;
     case "projectSummary":
       return `${guarantee.projectCode}\n${guarantee.projectName}\n ${guarantee.projectCui}`;
     case "entityName":
@@ -235,8 +160,8 @@ export function GuaranteesExplorer({
   const [search, setSearch] = useState("");
   const [selectedInsurer, setSelectedInsurer] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
-  const [selectedQuery, setSelectedQuery] = useState("all");
-  const [columnFilters, setColumnFilters] = useState<ColumnFilters>(initialColumnFilters);
+  const [selectedQuery, setSelectedQuery] = useState<GuaranteeQuestion>("all");
+  const [columnFilters, setColumnFilters] = useState<GuaranteeColumnFilters>(createInitialGuaranteeColumnFilters());
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const savedColumnSnapshot = useSyncExternalStore(
@@ -257,62 +182,26 @@ export function GuaranteesExplorer({
   const guaranteeGroups = [...new Set(guarantees.flatMap((guarantee) => guarantee.guaranteeGroups))];
   const projectStages = [...new Set(guarantees.map((guarantee) => guarantee.projectStage))];
 
-  const filteredGuarantees = useMemo(() => {
-    const normalizedSearch = search.toLowerCase().trim();
-
-    return guarantees.filter((guarantee) => {
-      const matchesSearch =
-        guarantee.projectCode.toLowerCase().includes(normalizedSearch) ||
-        guarantee.projectName.toLowerCase().includes(normalizedSearch) ||
-        guarantee.entityName.toLowerCase().includes(normalizedSearch) ||
-        guarantee.insurerName.toLowerCase().includes(normalizedSearch) ||
-        guarantee.guaranteeNumber.toLowerCase().includes(normalizedSearch);
-
-      const matchesInsurer =
-        selectedInsurer === "all" ||
-        guarantee.insurerName === selectedInsurer;
-
-      const matchesStatus =
-        selectedStatus === "all" ||
-        guarantee.status === selectedStatus;
-
-      const matchesQuery = matchesQuestion(guarantee, selectedQuery);
-      const matchesColumnFilters =
-        `${guarantee.projectCode} ${guarantee.projectCui}`.toLowerCase().includes(columnFilters.project.toLowerCase()) &&
-        guarantee.projectName.toLowerCase().includes(columnFilters.projectName.toLowerCase()) &&
-        matchesMultiFilter(guarantee.insurerName, columnFilters.insurer) &&
-        guarantee.guaranteeNumber.toLowerCase().includes(columnFilters.guaranteeNumber.toLowerCase()) &&
-        guarantee.guaranteeReason.toLowerCase().includes(columnFilters.reason.toLowerCase()) &&
-        matchesMultiFilter(guarantee.status, columnFilters.status) &&
-        String(guarantee.guaranteeValue).includes(columnFilters.guaranteeValue) &&
-        String(guarantee.projectValue).includes(columnFilters.projectValue) &&
-        String(guarantee.premium).includes(columnFilters.premium) &&
-        String(guarantee.collateral).includes(columnFilters.collateral) &&
-        String(guarantee.collateralPercentage).includes(columnFilters.collateralPercentage) &&
-        guarantee.validFrom.includes(columnFilters.validFrom) &&
-        guarantee.expiresAt.includes(columnFilters.expiresAt) &&
-        String(getRemainingDays(guarantee)).includes(columnFilters.renewalDays) &&
-        (!columnFilters.guaranteeGroups || columnFilters.guaranteeGroups.split("|").some((group) => guarantee.guaranteeGroups.includes(group))) &&
-        matchesMultiFilter(guarantee.projectStage, columnFilters.projectStage);
-
-      return (
-        matchesSearch &&
-        matchesInsurer &&
-        matchesStatus &&
-        matchesQuery &&
-        matchesColumnFilters
-      );
-    });
-  }, [
+  const filteredGuarantees = useMemo(
+  () =>
+    filterGuarantees(guarantees, {
+      search,
+      selectedStatus,
+      selectedInsurer,
+      selectedQuestion: selectedQuery,
+      columnFilters,
+    }),
+  [
     guarantees,
     search,
-    selectedInsurer,
     selectedStatus,
+    selectedInsurer,
     selectedQuery,
     columnFilters,
-  ]);
+  ],
+);
 
-  const updateColumnFilter = (field: keyof ColumnFilters, value: string) => {
+  const updateColumnFilter = (field: keyof GuaranteeColumnFilters, value: string) => {
     setCurrentPage(1);
     setColumnFilters((currentFilters) => ({ ...currentFilters, [field]: value }));
   };
@@ -355,7 +244,7 @@ export function GuaranteesExplorer({
     setSelectedStatus("all");
     setSelectedInsurer("all");
     setSelectedQuery("all");
-    setColumnFilters(initialColumnFilters);
+    setColumnFilters(createInitialGuaranteeColumnFilters());
   };
 
   const hasActiveFilters = search || selectedStatus !== "all" || selectedInsurer !== "all" || selectedQuery !== "all" || Object.values(columnFilters).some(Boolean);
@@ -463,9 +352,8 @@ export function GuaranteesExplorer({
           </div>
           <div className="flex min-w-0 items-center gap-3 xl:col-span-6">
             <label htmlFor="question-filter" className="shrink-0 text-xs font-semibold text-foreground">Responder pregunta:</label>
-            <select id="question-filter" value={selectedQuery} onChange={(event) => setSelectedQuery(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-primary bg-primary-soft px-3 py-2 text-xs font-semibold text-primary outline-none focus:ring-2 focus:ring-primary/20">
-              <option value="all">Selecciona una consulta para filtrar</option>
-              {questionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            <select id="question-filter" value={selectedQuery} onChange={(event) => {setSelectedQuery(event.target.value as GuaranteeQuestion); setCurrentPage(1);}} className="min-w-0 flex-1 rounded-lg border border-primary bg-primary-soft px-3 py-2 text-xs font-semibold text-primary outline-none focus:ring-2 focus:ring-primary/20">
+              {GUARANTEE_QUESTION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </div>
           <select value={selectedInsurer} onChange={(event) => setSelectedInsurer(event.target.value)} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-xs outline-none focus:border-primary xl:col-span-3"><option value="all">Todas las aseguradoras</option>{insurers.map((insurer) => <option key={insurer} value={insurer}>{insurer}</option>)}</select>

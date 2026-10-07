@@ -4,70 +4,31 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { Guarantee } from "@/types/guarantee";
 import { ColumnFilter } from "@/components/column-filter";
-import { GUARANTEE_STATUSES, isAddendumGuarantee, isConventionGuarantee } from "@/config/business-options";
+import { GUARANTEE_STATUSES } from "@/config/business-options";
+import type {
+  GuaranteeColumnFilters,
+  GuaranteeQuestion,
+} from "@/types/guarantee-filters";
+import {
+  isActiveGuarantee,
+  isNearExpiry,
+} from "@/lib/guarantees/guarantee-filter-rules";
+import {
+  createInitialGuaranteeColumnFilters,
+  GUARANTEE_QUESTION_OPTIONS,
+} from "@/config/guarantee-filter-options";
+import { filterGuarantees } from "@/lib/guarantees/filter-guarantees";
 
 type DashboardOverviewProps = { guarantees: Guarantee[] };
 
-type DashboardColumnFilters = {
-  guaranteeNumber: string;
-  entity: string;
-  projectName: string;
-  reason: string;
-  status: string;
-  guaranteeGroups: string;
-};
-
-const initialColumnFilters: DashboardColumnFilters = {
-  guaranteeNumber: "",
-  entity: "",
-  projectName: "",
-  reason: "",
-  status: "",
-  guaranteeGroups: "",
-};
-
-const questionOptions = [
-  { value: "all", label: "Todas las cartas" },
-  { value: "convenio", label: "Firma de convenio" },
-  { value: "adenda", label: "Firma de adenda" },
-  { value: "solicitadas", label: "Cartas solicitadas" },
-  { value: "por-vencer", label: "Cartas próximas a renovar" },
-  { value: "encaje-pendiente", label: "¿Cuánto encaje registrado hay?" },
-];
-
 const inputClassName = "rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary";
-
-function matchesQuestion(guarantee: Guarantee, question: string) {
-  if (question === "all") return true;
-  if (question === "solicitadas") return guarantee.status === "Solicitud";
-  if (question === "por-vencer") return isNearExpiry(guarantee);
-  if (question === "encaje-pendiente") return guarantee.collateral > 0;
-  if (question === "adenda") return guarantee.status === "Solicitud" && isAddendumGuarantee(guarantee.wonWith, guarantee.guaranteeReason);
-  if (question === "convenio") return guarantee.status === "Solicitud" && isConventionGuarantee(guarantee.wonWith, guarantee.guaranteeReason);
-
-  return [guarantee.guaranteeReason, guarantee.requestStatus, guarantee.observations]
-    .join(" ").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(question);
-}
-
-function isActive(guarantee: Guarantee) {
-  return guarantee.status === "Activa";
-}
-
-function isNearExpiry(guarantee: Guarantee) {
-  return isActive(guarantee) && guarantee.renewalDays >= 0 && guarantee.renewalDays <= 60;
-}
-
-function matchesMultiFilter(value: string, filter: string) {
-  if (!filter) return true;
-  return filter.split("|").includes(value);
-}
 
 export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
   const [search, setSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedInsurer, setSelectedInsurer] = useState("all");
-  const [selectedQuestion, setSelectedQuestion] = useState("all");
-  const [columnFilters, setColumnFilters] = useState<DashboardColumnFilters>(initialColumnFilters);
+  const [selectedQuestion, setSelectedQuestion] = useState<GuaranteeQuestion>("all");
+  const [columnFilters, setColumnFilters] = useState<GuaranteeColumnFilters>(createInitialGuaranteeColumnFilters());
   const [tablePage, setTablePage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -75,27 +36,26 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
   const statuses = useMemo(() => [...new Set([...GUARANTEE_STATUSES, ...guarantees.map((guarantee) => guarantee.status)])], [guarantees]);
   const guaranteeGroups = useMemo(() => [...new Set(guarantees.flatMap((guarantee) => guarantee.guaranteeGroups))], [guarantees]);
 
-  const filteredGuarantees = useMemo(() => {
-    const normalizedSearch = search.toLowerCase().trim();
-
-    return guarantees.filter((guarantee) => {
-      const matchesSearch = [guarantee.guaranteeNumber, guarantee.entityName, guarantee.projectName, guarantee.guaranteeReason]
-        .some((value) => value.toLowerCase().includes(normalizedSearch));
-
-      return matchesSearch &&
-        (selectedStatus === "all" || guarantee.status === selectedStatus) &&
-        (selectedInsurer === "all" || guarantee.insurerName === selectedInsurer) &&
-        matchesQuestion(guarantee, selectedQuestion) &&
-        guarantee.guaranteeNumber.toLowerCase().includes(columnFilters.guaranteeNumber.toLowerCase()) &&
-        guarantee.entityName.toLowerCase().includes(columnFilters.entity.toLowerCase()) &&
-        guarantee.projectName.toLowerCase().includes(columnFilters.projectName.toLowerCase()) &&
-        guarantee.guaranteeReason.toLowerCase().includes(columnFilters.reason.toLowerCase()) &&
-        matchesMultiFilter(guarantee.status, columnFilters.status) &&
-        (!columnFilters.guaranteeGroups || columnFilters.guaranteeGroups.split("|").some((group) => guarantee.guaranteeGroups.includes(group)));
-    });
-  }, [guarantees, search, selectedStatus, selectedInsurer, selectedQuestion, columnFilters]);
-
-  const updateColumnFilter = (field: keyof DashboardColumnFilters, value: string) => {
+  const filteredGuarantees = useMemo(
+    () =>
+      filterGuarantees(guarantees, {
+        search,
+        selectedStatus,
+        selectedInsurer,
+        selectedQuestion,
+        columnFilters,
+      }),
+    [
+      guarantees,
+      search,
+      selectedStatus,
+      selectedInsurer,
+      selectedQuestion,
+      columnFilters,
+    ],
+  );
+  
+  const updateColumnFilter = (field: keyof GuaranteeColumnFilters, value: string) => {
     setTablePage(1);
     setColumnFilters((currentFilters) => ({ ...currentFilters, [field]: value }));
   };
@@ -106,7 +66,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
     setSelectedInsurer("all");
     setSelectedQuestion("all");
     setTablePage(1);
-    setColumnFilters(initialColumnFilters);
+    setColumnFilters(createInitialGuaranteeColumnFilters());
   };
 
   const hasActiveFilters = search || selectedStatus !== "all" || selectedInsurer !== "all" || selectedQuestion !== "all" || Object.values(columnFilters).some(Boolean);
@@ -131,7 +91,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
     currentPage * pageSize,
   );
   const totalValue = filteredGuarantees.reduce((total, guarantee) => total + guarantee.guaranteeValue, 0);
-  const activeCount = filteredGuarantees.filter(isActive).length;
+  const activeCount = filteredGuarantees.filter(isActiveGuarantee).length;
   const expiringCount = filteredGuarantees.filter(isNearExpiry).length;
   const collateralValue = filteredGuarantees.reduce((total, guarantee) => total + guarantee.collateral, 0);
   const summaryAmount = selectedQuestion === "encaje-pendiente" ? collateralValue : totalValue;
@@ -192,7 +152,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
             </div>
             <div className="flex min-w-0 items-center gap-3 xl:col-span-6">
               <label htmlFor="dashboard-question-filter" className="shrink-0 text-xs font-semibold text-foreground">Responder pregunta:</label>
-              <select id="dashboard-question-filter" value={selectedQuestion} onChange={(event) => { setSelectedQuestion(event.target.value); setTablePage(1); }} className="min-w-0 flex-1 rounded-lg border border-primary bg-primary-soft px-3 py-2 text-xs font-semibold text-primary outline-none focus:ring-2 focus:ring-primary/20">{questionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+              <select id="dashboard-question-filter" value={selectedQuestion} onChange={(event) => { setSelectedQuestion(event.target.value as GuaranteeQuestion); setTablePage(1);}} className="min-w-0 flex-1 rounded-lg border border-primary bg-primary-soft px-3 py-2 text-xs font-semibold text-primary outline-none focus:ring-2 focus:ring-primary/20">{GUARANTEE_QUESTION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
             </div>
             <select value={selectedInsurer} onChange={(event) => { setSelectedInsurer(event.target.value); setTablePage(1); }} className={`${inputClassName} w-full text-xs xl:col-span-3`}><option value="all">Todas las aseguradoras</option>{insurers.map((insurer) => <option key={insurer} value={insurer}>{insurer}</option>)}</select>
             <button
@@ -218,7 +178,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
               <th className="px-4 py-3">Valor carta</th><th className="px-4 py-3">Vencimiento</th><th className="px-4 py-3">Días restantes</th>
             </tr></thead>
             <tbody className="divide-y divide-border">
-              {paginatedGuarantees.map((guarantee, index) => <tr key={guarantee.id} className={isActive(guarantee) ? "bg-emerald-50/50" : "hover:bg-surface-muted"}><td className="px-4 py-3 text-muted">{String((currentPage - 1) * pageSize + index + 1).padStart(2, "0")}</td><td className="px-4 py-3 font-semibold">{guarantee.guaranteeNumber}</td><td className="px-4 py-3 font-semibold">{guarantee.entityName}</td><td className="px-4 py-3 font-semibold">{guarantee.projectName}</td><td className="px-4 py-3 text-muted">{guarantee.guaranteeReason}</td><td className="px-4 py-3"><span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">{guarantee.status}</span></td><td className="whitespace-nowrap px-4 py-3 font-semibold">S/ {guarantee.guaranteeValue.toLocaleString("es-PE")}</td><td className="whitespace-nowrap px-4 py-3 text-muted">{guarantee.expiresAt}</td><td className="px-4 py-3 text-muted">{guarantee.renewalDays} días</td></tr>)}
+              {paginatedGuarantees.map((guarantee, index) => <tr key={guarantee.id} className={isActiveGuarantee(guarantee) ? "bg-emerald-50/50" : "hover:bg-surface-muted"}><td className="px-4 py-3 text-muted">{String((currentPage - 1) * pageSize + index + 1).padStart(2, "0")}</td><td className="px-4 py-3 font-semibold">{guarantee.guaranteeNumber}</td><td className="px-4 py-3 font-semibold">{guarantee.entityName}</td><td className="px-4 py-3 font-semibold">{guarantee.projectName}</td><td className="px-4 py-3 text-muted">{guarantee.guaranteeReason}</td><td className="px-4 py-3"><span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">{guarantee.status}</span></td><td className="whitespace-nowrap px-4 py-3 font-semibold">S/ {guarantee.guaranteeValue.toLocaleString("es-PE")}</td><td className="whitespace-nowrap px-4 py-3 text-muted">{guarantee.expiresAt}</td><td className="px-4 py-3 text-muted">{guarantee.renewalDays} días</td></tr>)}
               {filteredGuarantees.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted">No hay cartas para los filtros seleccionados.</td></tr>}
             </tbody>
           </table>
