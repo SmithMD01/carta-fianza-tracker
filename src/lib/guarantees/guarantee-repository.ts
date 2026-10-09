@@ -55,6 +55,7 @@ export async function getGuarantees(
 
     costCenter: guarantee.costCenter ?? "",
     observations: guarantee.observations ?? "",
+    documentUrl: guarantee.documentUrl ?? "",
 
     selectionProcess: guarantee.project.selectionProcess,
     consortiumWith: guarantee.project.consortiumWith ?? "",

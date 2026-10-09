@@ -34,6 +34,7 @@ export const mockGuarantees: Guarantee[] = [
     selectionProcess: "Licitación Pública",
     consortiumWith: "Consorcio ABC",
     wonWith: "Perfil",
+    documentUrl: "",
   },
   {
     id: "2",
@@ -68,6 +69,7 @@ export const mockGuarantees: Guarantee[] = [
     selectionProcess: "Licitación Pública",
     consortiumWith: "Consorcio XYZ",
     wonWith: "Expediente Técnico",
+    documentUrl: "",
   },
   {
     id: "3",
@@ -102,6 +104,7 @@ export const mockGuarantees: Guarantee[] = [
     selectionProcess: "Licitación Pública",
     consortiumWith: "Consorcio ABC",
     wonWith: "Expediente Técnico",
+    documentUrl: "",
   },
   {
     id: "4",
@@ -136,6 +139,7 @@ export const mockGuarantees: Guarantee[] = [
     selectionProcess: "Licitación Pública",
     consortiumWith: "Consorcio Agua Segura",
     wonWith: "Expediente Técnico",
+    documentUrl: "",
   },
   {
     id: "5",
@@ -170,6 +174,7 @@ export const mockGuarantees: Guarantee[] = [
     selectionProcess: "Licitación Pública",
     consortiumWith: "Consorcio ABC",
     wonWith: "Perfil",
+    documentUrl: "",
   },
   {
     id: "6",
@@ -204,6 +209,7 @@ export const mockGuarantees: Guarantee[] = [
     selectionProcess: "Licitación Pública",
     consortiumWith: "Consorcio XYZ",
     wonWith: "IOARR",
+    documentUrl: "",
   },
 
 

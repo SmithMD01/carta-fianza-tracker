@@ -28,6 +28,7 @@ type EditFormValues = {
   collateral: string;
   collateralPercentage: string;
   costCenter: string;
+  documentUrl: string;
   status: string;
 };
 
@@ -51,6 +52,7 @@ function createInitialValues(guarantee: Guarantee): EditFormValues {
     collateral: String(guarantee.collateral),
     collateralPercentage: String(guarantee.collateralPercentage),
     costCenter: guarantee.costCenter,
+    documentUrl: guarantee.documentUrl,
     status: guarantee.status,
   };
 }
@@ -151,6 +153,7 @@ export function GuaranteeEditModal({ guarantee, menuItem = false }: GuaranteeEdi
         collateral: Number(formValues.collateral),
         collateralPercentage: Number(formValues.collateralPercentage),
         costCenter: formValues.costCenter,
+        documentUrl: formValues.documentUrl,
         status: formValues.status as "Solicitud" | "Activa",
       });
 
@@ -275,13 +278,15 @@ export function GuaranteeEditModal({ guarantee, menuItem = false }: GuaranteeEdi
                     <EditField label="Fecha vencimiento" type="date" value={formValues.expiresAt} required onChange={(value) => updateField("expiresAt", value)} />
                     <EditField label="Valor componente" type="number" value={formValues.componentValue} required onChange={(value) => updateField("componentValue", value)} />
                     <EditField label="Porcentaje para valor CF" type="number" value={formValues.guaranteePercentage} required onChange={(value) => updateField("guaranteePercentage", value)} />
-                    <EditField label="Monto prima" type="number" value={formValues.premium} onChange={(value) => updateField("premium", value)} />
-                    <EditField label="Monto encaje" type="number" value={formValues.collateral} onChange={(value) => updateField("collateral", value)} />
-                    <EditField label="% encaje" type="number" value={formValues.collateralPercentage} onChange={(value) => updateField("collateralPercentage", value)} />
                     <div className="rounded-lg border border-border bg-surface-muted px-3 py-2">
                       <p className="text-xs font-medium text-muted">Valor CF calculado</p>
                       <p className="mt-1 text-sm font-semibold text-foreground">S/ {calculatedGuaranteeValue.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
+                    <EditField label="Monto prima" type="number" value={formValues.premium} onChange={(value) => updateField("premium", value)} />
+                    <EditField label="Monto encaje" type="number" value={formValues.collateral} onChange={(value) => updateField("collateral", value)} />
+                    <EditField label="% encaje" type="number" value={formValues.collateralPercentage} onChange={(value) => updateField("collateralPercentage", value)} />
+                    <EditField label="Enlace del PDF CF" type="url" value={formValues.documentUrl} onChange={(value) => updateField("documentUrl", value)} />
+
                   </div>
                 </section>
 

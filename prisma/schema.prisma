@@ -8,65 +8,66 @@ datasource db {
 }
 
 model Project {
-  id                   String      @id @default(uuid())
-  projectCode          String      @unique
-  cui                  String      @unique
-  referenceName        String
-  formalName           String
-  entityName           String
-  projectValue         Decimal     @db.Decimal(18, 2)
-  selectionProcess     String
-  consortiumWith       String?
-  wonWith              String?
-  projectStage         String
-  guarantees           Guarantee[]
-  createdAt            DateTime    @default(now())
-  updatedAt            DateTime    @updatedAt
+  id               String      @id @default(uuid())
+  projectCode      String      @unique
+  cui              String      @unique
+  referenceName    String
+  formalName       String
+  entityName       String
+  projectValue     Decimal     @db.Decimal(18, 2)
+  selectionProcess String
+  consortiumWith   String?
+  wonWith          String?
+  projectStage     String
+  guarantees       Guarantee[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   @@index([projectStage])
 }
 
 model FinancialEntity {
-  id          String      @id @default(uuid())
-  name        String      @unique
-  isActive    Boolean     @default(true)
-  guarantees  Guarantee[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id         String      @id @default(uuid())
+  name       String      @unique
+  isActive   Boolean     @default(true)
+  guarantees Guarantee[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
 
 model Guarantee {
-  id                    String          @id @default(uuid())
-  projectId             String
-  financialEntityId     String?
-  guaranteeNumber       String?         @unique
-  guaranteeReason       String
-  guaranteeGroups       String[]        @default([])
-  validFrom             DateTime?       @db.Date
-  validityDays          Int?
-  expiresAt             DateTime?       @db.Date
-  requestingArea        String
-  vof                   String?
-  carPolicy             String?
-  guaranteeValue        Decimal         @db.Decimal(18, 2)
-  guaranteePercentage   Decimal?        @db.Decimal(7, 4)
-  componentValue        Decimal?        @db.Decimal(18, 2)
-  costCenter            String?
-  observations          String?
-  premium               Decimal?        @db.Decimal(18, 2)
-  collateral            Decimal?        @db.Decimal(18, 2)
-  collateralPercentage  Decimal?        @db.Decimal(7, 4)
-  renewalDays           Int             @default(0)
-  renewalNumber         Int?
-  originalGuaranteeId   String?
-  status                String          @default("Solicitud")
-  requestStatus         String?
-  project               Project         @relation(fields: [projectId], references: [id], onDelete: Restrict)
-  financialEntity       FinancialEntity? @relation(fields: [financialEntityId], references: [id], onDelete: Restrict)
-  originalGuarantee     Guarantee?      @relation("GuaranteeRenewals", fields: [originalGuaranteeId], references: [id], onDelete: SetNull)
-  renewals              Guarantee[]     @relation("GuaranteeRenewals")
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  id                   String           @id @default(uuid())
+  projectId            String
+  financialEntityId    String?
+  guaranteeNumber      String?          @unique
+  guaranteeReason      String
+  guaranteeGroups      String[]         @default([])
+  validFrom            DateTime?        @db.Date
+  validityDays         Int?
+  expiresAt            DateTime?        @db.Date
+  requestingArea       String
+  vof                  String?
+  carPolicy            String?
+  guaranteeValue       Decimal          @db.Decimal(18, 2)
+  guaranteePercentage  Decimal?         @db.Decimal(7, 4)
+  componentValue       Decimal?         @db.Decimal(18, 2)
+  costCenter           String?
+  observations         String?
+  documentUrl          String?
+  premium              Decimal?         @db.Decimal(18, 2)
+  collateral           Decimal?         @db.Decimal(18, 2)
+  collateralPercentage Decimal?         @db.Decimal(7, 4)
+  renewalDays          Int              @default(0)
+  renewalNumber        Int?
+  originalGuaranteeId  String?
+  status               String           @default("Solicitud")
+  requestStatus        String?
+  project              Project          @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  financialEntity      FinancialEntity? @relation(fields: [financialEntityId], references: [id], onDelete: Restrict)
+  originalGuarantee    Guarantee?       @relation("GuaranteeRenewals", fields: [originalGuaranteeId], references: [id], onDelete: SetNull)
+  renewals             Guarantee[]      @relation("GuaranteeRenewals")
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
 
   @@index([projectId])
   @@index([financialEntityId])

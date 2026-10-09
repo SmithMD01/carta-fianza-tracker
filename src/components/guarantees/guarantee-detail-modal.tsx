@@ -68,6 +68,7 @@ export function GuaranteeDetailModal({ guarantee }: GuaranteeDetailModalProps) {
                     <DetailItem label="Motivo" value={guarantee.guaranteeReason} />
                     <DetailItem label="Área solicitante" value={guarantee.requestingArea} />
                     <DetailItem label="CeCo" value={guarantee.costCenter} />
+                    <DetailItem label="Link Documento" value={guarantee.documentUrl} />
                     <DetailItem label="Fecha de inicio" value={guarantee.validFrom} />
                     <DetailItem label="Fecha de vencimiento" value={guarantee.expiresAt} />
                     <DetailItem label="Días de vigencia" value={guarantee.validityDays} />

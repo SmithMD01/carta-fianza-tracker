@@ -27,6 +27,7 @@ export type Guarantee = {
 
   costCenter: string; // centro de costo
   observations: string; // observaciones
+  documentUrl: string; // Enlace opcional del PDF CF de OneDrive
 
   selectionProcess: string; // proceso de selección
   consortiumWith: string; // consorciado con

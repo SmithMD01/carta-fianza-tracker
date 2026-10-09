@@ -136,6 +136,7 @@ const updateGuaranteeSchema = z.object({
   collateral: z.number().nonnegative(),
   collateralPercentage: z.number().nonnegative(),
   costCenter: z.string().trim(),
+  documentUrl: z.union([z.string().url(), z.literal(""),]),
   status: z.enum(["Solicitud", "Activa"]),
 });
 
@@ -187,6 +188,7 @@ export async function updateGuaranteeAction(
       collateral: data.collateral,
       collateralPercentage: data.collateralPercentage,
       costCenter: data.costCenter || null,
+      documentUrl: data.documentUrl || null,
       status: data.status,
       renewalDays: calculateRemainingDays(data.validFrom),
     },
