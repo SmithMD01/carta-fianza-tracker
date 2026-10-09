@@ -51,3 +51,61 @@ export async function createProjectAction(input: CreateProjectInput) {
     activeGuarantees: 0,
   };
 }
+
+const updateProjectSchema = createProjectSchema.extend({
+  id: z.string().uuid(),
+});
+
+export type UpdateProjectInput = z.infer<
+  typeof updateProjectSchema
+>;
+
+export async function updateProjectAction(
+  input: UpdateProjectInput,
+) {
+  const data = updateProjectSchema.parse(input);
+
+  const project = await prisma.project.update({
+    where: {
+      id: data.id,
+    },
+    data: {
+      projectCode: data.projectCode,
+      cui: data.cui,
+      referenceName: data.referenceName,
+      formalName: data.formalName,
+      entityName: data.entityName,
+      projectValue: data.projectValue,
+      selectionProcess: data.selectionProcess,
+      consortiumWith: data.consortiumWith || null,
+      wonWith: data.wonWith,
+      projectStage: data.projectStage,
+    },
+    include: {
+      _count: {
+        select: {
+          guarantees: {
+            where: {
+              status: "Activa",
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return {
+    id: project.id,
+    projectCode: project.projectCode,
+    cui: project.cui,
+    referenceName: project.referenceName,
+    formalName: project.formalName,
+    entityName: project.entityName,
+    projectValue: Number(project.projectValue),
+    selectionProcess: project.selectionProcess,
+    consortiumWith: project.consortiumWith ?? "",
+    wonWith: project.wonWith ?? "",
+    projectStage: project.projectStage,
+    activeGuarantees: project._count.guarantees,
+  };
+}

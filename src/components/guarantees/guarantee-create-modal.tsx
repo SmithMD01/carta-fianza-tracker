@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Project } from "@/types/project";
 import { getGuaranteeReasonsForOrigin, REQUESTING_AREAS } from "@/config/business-options";
+import { createGuaranteeAction } from "@/app/cartas-fianza/actions";
 
 type GuaranteeCreateModalProps = {
   projects: Project[];
@@ -71,6 +72,9 @@ export function GuaranteeCreateModal({
   const [isOpen, setIsOpen] = useState(false);
   const [formValues, setFormValues] = useState<FormValues>(initialFormValues);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState("");
+
   const selectedProject = projects.find(
     (project) => project.id === formValues.projectId,
   );
@@ -96,32 +100,43 @@ export function GuaranteeCreateModal({
     setFormValues(initialFormValues);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
 
-    if (!selectedProject) return;
+    if (!selectedProject) {
+      return;
+    }
 
-    const guaranteeDraft = {
-      ...formValues,
-      projectCode: selectedProject.projectCode,
-      projectCui: selectedProject.cui,
-      projectName: selectedProject.referenceName,
-      formalProjectName: selectedProject.formalName,
-      entityName: selectedProject.entityName,
-      projectValue: selectedProject.projectValue,
-      selectionProcess: selectedProject.selectionProcess,
-      consortiumWith: selectedProject.consortiumWith,
-      wonWith: selectedProject.wonWith,
-      guaranteeValue: calculatedGuaranteeValue,
-      componentValue: Number(formValues.componentValue),
-      guaranteePercentage: Number(formValues.guaranteePercentage),
-      validityDays: Number(formValues.validityDays),
-      status: "Solicitud",
-    };
+    setSubmissionError("");
+    setIsSubmitting(true);
 
-    console.log("Carta fianza registrada:", guaranteeDraft);
-    closeModal();
+    try {
+      await createGuaranteeAction({
+        projectId: formValues.projectId,
+        guaranteeReason: formValues.guaranteeReason,
+        validFrom: formValues.validFrom,
+        requestingArea: formValues.requestingArea,
+        validityDays: Number(formValues.validityDays),
+        guaranteePercentage: Number(
+          formValues.guaranteePercentage,
+        ),
+        componentValue: Number(formValues.componentValue),
+        costCenter: formValues.costCenter,
+      });
+
+      closeModal();
+    } catch (error) {
+      console.error(error);
+      setSubmissionError(
+        "No se pudo registrar la carta fianza. Verifica los datos e inténtalo nuevamente.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
 
   return (
     <>
@@ -259,13 +274,21 @@ export function GuaranteeCreateModal({
                 </div>
               </section>
 
+              {submissionError && (
+                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {submissionError}
+                </p>
+              )}
+
               <footer className="flex justify-end gap-3 border-t border-border pt-5">
                 <button type="button" onClick={closeModal} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-muted">
                   Cancelar
                 </button>
-                <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark">
-                  Registrar carta fianza
-                </button>
+              <button type="submit" disabled={isSubmitting} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60" >
+                {isSubmitting
+                  ? "Guardando..."
+                  : "Registrar carta fianza"}
+              </button>
               </footer>
             </form>
           </div>

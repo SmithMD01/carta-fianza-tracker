@@ -1,21 +1,33 @@
 import { notFound } from "next/navigation";
 import { ProjectDetailView } from "@/components/projects/project-detail-view";
-import { mockGuarantees } from "@/data/mock-guarantees";
-import { mockProjects } from "@/data/mock-projects";
+import {getProjectById} from "@/lib/projects/project-repository";
+import {getGuaranteesByProjectId} from "@/lib/guarantees/guarantee-repository";
+
+export const dynamic = "force-dynamic";
 
 type ProjectDetailPageProps = {
   params: Promise<{ projectId: string }>;
 };
 
-export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
+export default async function ProjectDetailPage({
+  params,
+}: ProjectDetailPageProps) {
   const { projectId } = await params;
-  const project = mockProjects.find((item) => item.id === projectId);
 
-  if (!project) notFound();
+  const project = await getProjectById(projectId);
 
-  const projectGuarantees = mockGuarantees.filter(
-    (guarantee) => guarantee.projectCode === project.projectCode,
+  if (!project) {
+    notFound();
+  }
+
+  const projectGuarantees =
+    await getGuaranteesByProjectId(projectId);
+
+  return (
+    <ProjectDetailView
+      project={project}
+      guarantees={projectGuarantees}
+    />
   );
-
-  return <ProjectDetailView project={project} guarantees={projectGuarantees} />;
 }
+

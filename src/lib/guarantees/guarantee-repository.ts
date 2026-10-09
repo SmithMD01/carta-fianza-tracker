@@ -7,8 +7,11 @@ function formatDate(date: Date | null) {
   return date ? date.toISOString().slice(0, 10) : "";
 }
 
-export async function getGuarantees(): Promise<Guarantee[]> {
+export async function getGuarantees(
+  projectId?: string,
+): Promise<Guarantee[]> {
   const guarantees = await prisma.guarantee.findMany({
+    where: projectId ? { projectId } : undefined,
     orderBy: {
       createdAt: "desc",
     },
@@ -72,4 +75,10 @@ export async function getGuarantees(): Promise<Guarantee[]> {
     requestStatus: guarantee.requestStatus ?? "",
     projectStage: guarantee.project.projectStage,
   }));
+}
+
+export async function getGuaranteesByProjectId(
+  projectId: string,
+) {
+  return getGuarantees(projectId);
 }

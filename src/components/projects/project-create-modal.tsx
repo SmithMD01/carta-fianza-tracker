@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PROJECT_ORIGINS, PROJECT_STAGES } from "@/config/business-options";
 import type { Project } from "@/types/project";
-import { createProjectAction } from "@/app/proyectos/actions";
+import { createProjectAction, updateProjectAction } from "@/app/proyectos/actions";
 
 type ProjectCreateModalProps = {
   project?: Project;
@@ -158,15 +158,22 @@ export function ProjectCreateModal({ project, onSave, menuItem = false }: Projec
     setIsSubmitting(true);
 
     try {
-      const projectDraft: Project = {
-        id: project?.id ?? crypto.randomUUID(),
-        ...formValues,
-        projectValue: Number(formValues.projectValue),
-        activeGuarantees: project?.activeGuarantees ?? 0,
-      };
-
       if (project) {
-        onSave?.(projectDraft);
+        const updatedProject = await updateProjectAction({
+          id: project.id,
+          projectCode: formValues.projectCode,
+          cui: formValues.cui,
+          referenceName: formValues.referenceName,
+          formalName: formValues.formalName,
+          entityName: formValues.entityName,
+          projectValue: Number(formValues.projectValue),
+          selectionProcess: formValues.selectionProcess,
+          consortiumWith: formValues.consortiumWith,
+          wonWith: formValues.wonWith,
+          projectStage: formValues.projectStage,
+        });
+
+        onSave?.(updatedProject);
       } else {
         const savedProject = await createProjectAction({
           projectCode: formValues.projectCode,
