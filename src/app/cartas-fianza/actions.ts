@@ -118,3 +118,82 @@ export async function createGuaranteeAction(
     status: guarantee.status,
   };
 }
+
+
+const updateGuaranteeSchema = z.object({
+  id: z.string().min(1),
+  insurerName: z.string().trim(),
+  guaranteeNumber: z.string().trim(),
+  guaranteeReason: z.string().trim().min(1),
+  validFrom: z.string().min(1),
+  validityDays: z.number().int().positive(),
+  requestingArea: z.string().trim().min(1),
+  vof: z.string().trim(),
+  carPolicy: z.string().trim(),
+  guaranteePercentage: z.number().nonnegative(),
+  componentValue: z.number().nonnegative(),
+  premium: z.number().nonnegative(),
+  collateral: z.number().nonnegative(),
+  collateralPercentage: z.number().nonnegative(),
+  costCenter: z.string().trim(),
+  status: z.enum(["Solicitud", "Activa"]),
+});
+
+export type UpdateGuaranteeInput = z.infer<
+  typeof updateGuaranteeSchema
+>;
+
+export async function updateGuaranteeAction(
+  input: UpdateGuaranteeInput,
+) {
+  const data = updateGuaranteeSchema.parse(input);
+
+  const guarantee = await prisma.guarantee.findUnique({
+    where: {
+      id: data.id,
+    },
+  });
+
+  if (!guarantee) {
+    throw new Error("La carta fianza no existe");
+  }
+
+  const guaranteeValue =
+    (data.componentValue * data.guaranteePercentage) / 100;
+
+  const expiresAt = calculateExpirationDate(
+    data.validFrom,
+    data.validityDays,
+  );
+
+  const updatedGuarantee = await prisma.guarantee.update({
+    where: {
+      id: data.id,
+    },
+    data: {
+      guaranteeNumber: data.guaranteeNumber || null,
+      guaranteeReason: data.guaranteeReason,
+      guaranteeGroups: getGuaranteeGroups(data.guaranteeReason),
+      validFrom: new Date(`${data.validFrom}T00:00:00`),
+      validityDays: data.validityDays,
+      expiresAt,
+      requestingArea: data.requestingArea,
+      vof: data.vof || null,
+      carPolicy: data.carPolicy || null,
+      guaranteeValue,
+      guaranteePercentage: data.guaranteePercentage,
+      componentValue: data.componentValue,
+      premium: data.premium,
+      collateral: data.collateral,
+      collateralPercentage: data.collateralPercentage,
+      costCenter: data.costCenter || null,
+      status: data.status,
+      renewalDays: calculateRemainingDays(data.validFrom),
+    },
+  });
+
+  return {
+    id: updatedGuarantee.id,
+    status: updatedGuarantee.status,
+  };
+}

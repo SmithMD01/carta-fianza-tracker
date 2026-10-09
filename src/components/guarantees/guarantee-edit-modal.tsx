@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { Guarantee } from "@/types/guarantee";
 import { getGuaranteeReasonsForOrigin, REQUESTING_AREAS } from "@/config/business-options";
 import {createPortal} from "react-dom";
+import { useRouter } from "next/navigation";
+import { updateGuaranteeAction } from "@/app/cartas-fianza/actions";
 
 type GuaranteeEditModalProps = {
   guarantee: Guarantee;
@@ -88,9 +90,13 @@ function EditField({
 export function GuaranteeEditModal({ guarantee, menuItem = false }: GuaranteeEditModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [formValues, setFormValues] = useState(() => createInitialValues(guarantee));
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState("");
   const availableReasons = Array.from(new Set([
     ...getGuaranteeReasonsForOrigin(guarantee.wonWith),
     guarantee.guaranteeReason,
+    
   ]));
   const canChangeStatus = guarantee.status === "Solicitud" || guarantee.status === "Activa";
   const calculatedGuaranteeValue =
@@ -120,24 +126,44 @@ export function GuaranteeEditModal({ guarantee, menuItem = false }: GuaranteeEdi
 
   const closeModal = () => setIsOpen(false);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
 
-    const updatedGuarantee = {
-      ...guarantee,
-      ...formValues,
-      guaranteeValue: calculatedGuaranteeValue,
-      guaranteePercentage: Number(formValues.guaranteePercentage),
-      validityDays: Number(formValues.validityDays),
-      componentValue: Number(formValues.componentValue),
-      premium: Number(formValues.premium),
-      collateral: Number(formValues.collateral),
-      collateralPercentage: Number(formValues.collateralPercentage),
-      status: formValues.status,
-    };
+    setIsSubmitting(true);
+    setSubmissionError("");
 
-    console.log("Carta fianza actualizada:", updatedGuarantee);
-    closeModal();
+    try {
+      await updateGuaranteeAction({
+        id: guarantee.id,
+        insurerName: formValues.insurerName,
+        guaranteeNumber: formValues.guaranteeNumber,
+        guaranteeReason: formValues.guaranteeReason,
+        validFrom: formValues.validFrom,
+        validityDays: Number(formValues.validityDays),
+        requestingArea: formValues.requestingArea,
+        vof: formValues.vof,
+        carPolicy: formValues.carPolicy,
+        guaranteePercentage: Number(formValues.guaranteePercentage),
+        componentValue: Number(formValues.componentValue),
+        premium: Number(formValues.premium),
+        collateral: Number(formValues.collateral),
+        collateralPercentage: Number(formValues.collateralPercentage),
+        costCenter: formValues.costCenter,
+        status: formValues.status as "Solicitud" | "Activa",
+      });
+
+      closeModal();
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      setSubmissionError(
+        "No se pudo actualizar la carta fianza.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -263,9 +289,15 @@ export function GuaranteeEditModal({ guarantee, menuItem = false }: GuaranteeEdi
                   <button type="button" onClick={closeModal} className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-muted">
                     Cancelar
                   </button>
-                  <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark">
-                    Guardar cambios
+                  <button type="submit" disabled={isSubmitting} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark">
+                    {isSubmitting ? "Guardando..." : "Guardar cambios"}
                   </button>
+
+                  {submissionError && (
+                    <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">
+                      {submissionError}
+                    </p>
+                  )}
                 </footer>
               </form>
             </div>
