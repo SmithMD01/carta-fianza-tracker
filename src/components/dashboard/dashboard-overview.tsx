@@ -10,6 +10,7 @@ import type {
   GuaranteeQuestion,
 } from "@/types/guarantee-filters";
 import {
+  getGuaranteeRemainingDays,
   isActiveGuarantee,
   isNearExpiry,
 } from "@/lib/guarantees/guarantee-filter-rules";
@@ -78,7 +79,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
     })).filter((item) => item.count > 0).sort((a, b) => b.count - a.count);
   }, [filteredGuarantees, insurers]);
 
-  const expiringGuarantees = filteredGuarantees.filter(isNearExpiry).sort((a, b) => a.renewalDays - b.renewalDays).slice(0, 5);
+  const expiringGuarantees = filteredGuarantees.filter(isNearExpiry).sort((a, b) => getGuaranteeRemainingDays(a) - getGuaranteeRemainingDays(b)).slice(0, 5);
   const orderedGuarantees = selectedQuestion === "por-vencer"
     ? [...filteredGuarantees].sort((a, b) => a.renewalDays - b.renewalDays)
     : selectedQuestion === "solicitadas"
@@ -133,7 +134,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
             <table className="w-full min-w-[720px] text-sm">
               <thead className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted"><tr><th className="py-2 pr-4">N.° carta</th><th className="py-2 pr-4">Obra referencial</th><th className="py-2 pr-4">Vencimiento</th><th className="py-2">Días</th></tr></thead>
               <tbody className="divide-y divide-border">
-                {expiringGuarantees.map((guarantee) => <tr key={guarantee.id}><td className="py-3 pr-4 font-semibold">{guarantee.guaranteeNumber}</td><td className="max-w-[220px] truncate py-3 pr-4 text-muted">{guarantee.projectName}</td><td className="whitespace-nowrap py-3 pr-4 text-muted">{guarantee.expiresAt}</td><td className="py-3"><span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">{guarantee.renewalDays} días</span></td></tr>)}
+                {expiringGuarantees.map((guarantee) => <tr key={guarantee.id}><td className="py-3 pr-4 font-semibold">{guarantee.guaranteeNumber}</td><td className="max-w-[220px] truncate py-3 pr-4 text-muted">{guarantee.projectName}</td><td className="whitespace-nowrap py-3 pr-4 text-muted">{guarantee.expiresAt}</td><td className="py-3"><span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">{getGuaranteeRemainingDays(guarantee)} días</span></td></tr>)}
                 {expiringGuarantees.length === 0 && <tr><td colSpan={4} className="py-6 text-center text-muted">No hay cartas próximas a renovar.</td></tr>}
               </tbody>
             </table>
@@ -178,7 +179,7 @@ export function DashboardOverview({ guarantees }: DashboardOverviewProps) {
               <th className="px-4 py-3">Valor carta</th><th className="px-4 py-3">Vencimiento</th><th className="px-4 py-3">Días restantes</th>
             </tr></thead>
             <tbody className="divide-y divide-border">
-              {paginatedGuarantees.map((guarantee, index) => <tr key={guarantee.id} className={isActiveGuarantee(guarantee) ? "bg-emerald-50/50" : "hover:bg-surface-muted"}><td className="px-4 py-3 text-muted">{String((currentPage - 1) * pageSize + index + 1).padStart(2, "0")}</td><td className="px-4 py-3 font-semibold">{guarantee.guaranteeNumber}</td><td className="px-4 py-3 font-semibold">{guarantee.entityName}</td><td className="px-4 py-3 font-semibold">{guarantee.projectName}</td><td className="px-4 py-3 text-muted">{guarantee.guaranteeReason}</td><td className="px-4 py-3"><span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">{guarantee.status}</span></td><td className="whitespace-nowrap px-4 py-3 font-semibold">S/ {guarantee.guaranteeValue.toLocaleString("es-PE")}</td><td className="whitespace-nowrap px-4 py-3 text-muted">{guarantee.expiresAt}</td><td className="px-4 py-3 text-muted">{guarantee.renewalDays} días</td></tr>)}
+              {paginatedGuarantees.map((guarantee, index) => <tr key={guarantee.id} className={isActiveGuarantee(guarantee) ? "bg-emerald-50/50" : "hover:bg-surface-muted"}><td className="px-4 py-3 text-muted">{String((currentPage - 1) * pageSize + index + 1).padStart(2, "0")}</td><td className="px-4 py-3 font-semibold">{guarantee.guaranteeNumber}</td><td className="px-4 py-3 font-semibold">{guarantee.entityName}</td><td className="px-4 py-3 font-semibold">{guarantee.projectName}</td><td className="px-4 py-3 text-muted">{guarantee.guaranteeReason}</td><td className="px-4 py-3"><span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">{guarantee.status}</span></td><td className="whitespace-nowrap px-4 py-3 font-semibold">S/ {guarantee.guaranteeValue.toLocaleString("es-PE")}</td><td className="whitespace-nowrap px-4 py-3 text-muted">{guarantee.expiresAt}</td><td className="px-4 py-3 text-muted">{getGuaranteeRemainingDays(guarantee)} días</td></tr>)}
               {filteredGuarantees.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-muted">No hay cartas para los filtros seleccionados.</td></tr>}
             </tbody>
           </table>

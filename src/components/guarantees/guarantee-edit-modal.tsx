@@ -64,6 +64,7 @@ type EditFieldProps = {
   label: string;
   value: string;
   required?: boolean;
+  disabled?: boolean;
   type?: string;
   onChange: (value: string) => void;
 };
@@ -72,6 +73,7 @@ function EditField({
   label,
   value,
   required = false,
+  disabled = false,
   type = "text",
   onChange,
 }: EditFieldProps) {
@@ -85,6 +87,7 @@ function EditField({
         type={type}
         value={value}
         required={required}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         className={inputClassName}
       />
@@ -298,7 +301,7 @@ export function GuaranteeEditModal({ guarantee, financialEntities, menuItem = fa
                     <EditField label="Póliza CAR" value={formValues.carPolicy} onChange={(value) => updateField("carPolicy", value)} />
                     <EditField label="Fecha inicio" type="date" value={formValues.validFrom} required onChange={(value) => updateField("validFrom", value)} />
                     <EditField label="Cantidad de días de vigencia" type="number" value={formValues.validityDays} required onChange={(value) => updateField("validityDays", value)} />
-                    <EditField label="Fecha vencimiento" type="date" value={formValues.expiresAt} required onChange={(value) => updateField("expiresAt", value)} />
+                    <EditField label="Fecha vencimiento" type="date" value={formValues.expiresAt} disabled required   onChange={() => {}} />
                     <EditField label="Valor componente" type="number" value={formValues.componentValue} required onChange={(value) => updateField("componentValue", value)} />
                     <EditField label="Porcentaje para valor CF" type="number" value={formValues.guaranteePercentage} required onChange={(value) => updateField("guaranteePercentage", value)} />
                     <div className="rounded-lg border border-border bg-surface-muted px-3 py-2">

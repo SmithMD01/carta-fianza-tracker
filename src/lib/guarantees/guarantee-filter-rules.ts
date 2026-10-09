@@ -10,11 +10,13 @@ export function isActiveGuarantee(guarantee: Guarantee) {
 }
 
 export function isNearExpiry(guarantee: Guarantee) {
-  return (
-    isActiveGuarantee(guarantee) &&
-    guarantee.renewalDays >= 0 &&
-    guarantee.renewalDays <= 60
-  );
+  const remainingDays = getGuaranteeRemainingDays(guarantee);
+
+  const eligibleStatus =
+    guarantee.status === "Activa" ||
+    guarantee.status === "Vencida";
+
+  return eligibleStatus && remainingDays <= 60;
 }
 
 export function matchesGuaranteeQuestion(
@@ -72,17 +74,22 @@ export function matchesMultiValueFilter(
 }
 
 export function getGuaranteeRemainingDays(guarantee: Guarantee) {
-  if (guarantee.status !== "Solicitud") {
-    return guarantee.renewalDays;
+  const targetDate =
+    guarantee.status === "Solicitud"
+      ? guarantee.validFrom
+      : guarantee.expiresAt;
+
+  if (!targetDate) {
+    return 0;
   }
 
-  const startDate = new Date(`${guarantee.validFrom}T00:00:00`);
+  const date = new Date(`${targetDate}T00:00:00`);
   const today = new Date();
 
   today.setHours(0, 0, 0, 0);
 
   return Math.ceil(
-    (startDate.getTime() - today.getTime()) /
+    (date.getTime() - today.getTime()) /
       (1000 * 60 * 60 * 24),
   );
 }
