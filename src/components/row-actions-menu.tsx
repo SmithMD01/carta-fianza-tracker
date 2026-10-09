@@ -68,9 +68,14 @@ export function RowActionsMenu({
     const closeOnOutsideClick = (event: MouseEvent) => {
       const target = event.target as Node;
 
+      const clickInsideModal =
+        target instanceof Element &&
+        target.closest("[data-row-action-modal]");
+
       if (
         buttonRef.current?.contains(target) ||
-        menuRef.current?.contains(target)
+        menuRef.current?.contains(target) ||
+        clickInsideModal
       ) {
         return;
       }
