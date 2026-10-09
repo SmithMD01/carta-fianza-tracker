@@ -5,7 +5,7 @@ import type { Guarantee } from "@/types/guarantee";
 import { GuaranteeEditModal } from "@/components/guarantees/guarantee-edit-modal";
 import { GuaranteeDetailModal } from "@/components/guarantees/guarantee-detail-modal";
 import { ColumnFilter } from "@/components/column-filter";
-import { RowActionsMenu } from "@/components/row-actions-menu";
+import { RowActionsMenu, rowActionItemClassName } from "@/components/row-actions-menu";
 import { GUARANTEE_STATUSES } from "@/config/business-options";
 import type { GuaranteeQuestion } from "@/types/guarantee-filters";
 import { getGuaranteeRemainingDays } from "@/lib/guarantees/guarantee-filter-rules";
@@ -15,11 +15,12 @@ import {
 } from "@/config/guarantee-filter-options";
 type GuaranteesExplorerProps = {
   guarantees: Guarantee[];
+  financialEntities: FinancialEntityOption[];
 };
 import type { GuaranteeColumnFilters } from "@/types/guarantee-filters";
 import { filterGuarantees } from "@/lib/guarantees/filter-guarantees";
 import { DataTablePagination } from "../data-table/data-table-pagination";
-
+import type { FinancialEntityOption } from "@/lib/financial-entities/financial-entity-repository";
 
 type GuaranteeColumnKey =
   | "projectSummary"
@@ -153,6 +154,7 @@ function getGuaranteeColumnValue(guarantee: Guarantee, column: GuaranteeColumnKe
 
 export function GuaranteesExplorer({
   guarantees,
+  financialEntities,
 }: GuaranteesExplorerProps) {
   const [search, setSearch] = useState("");
   const [selectedInsurer, setSelectedInsurer] = useState("all");
@@ -428,7 +430,14 @@ export function GuaranteesExplorer({
                       <td className="px-3 py-2 text-xs">
                         <RowActionsMenu>
                           <GuaranteeDetailModal guarantee={guarantee} />
-                          <GuaranteeEditModal guarantee={guarantee} menuItem />
+                          <GuaranteeEditModal guarantee={guarantee} financialEntities={financialEntities} menuItem />
+                          {guarantee.documentUrl &&(
+                            <a href={guarantee.documentUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={rowActionItemClassName}
+                            >Ver PDF</a>
+                          )}
                           <button type="button" disabled className="block w-full rounded-md px-3 py-2 text-left text-xs font-medium text-muted disabled:cursor-not-allowed">Renovar</button>
                         </RowActionsMenu>
                       </td>

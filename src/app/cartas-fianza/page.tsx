@@ -2,13 +2,15 @@ import { getGuarantees } from "@/lib/guarantees/guarantee-repository";
 import { GuaranteesExplorer } from "@/components/guarantees/guarantees-explorer";
 import { GuaranteeCreateModal } from "@/components/guarantees/guarantee-create-modal";
 import { getProjects } from "@/lib/projects/project-repository";
+import { getFinancialEntities } from "@/lib/financial-entities/financial-entity-repository";
 
 export const dynamic = "force-dynamic";
 
 export default async function CartasFianzaPage() {
-    const [projects, guarantees] = await Promise.all([
+    const [projects, guarantees, financialEntities] = await Promise.all([
     getProjects(),
     getGuarantees(),
+    getFinancialEntities(),
     ]);
 
     return (
@@ -37,7 +39,7 @@ export default async function CartasFianzaPage() {
             </div>
         </header>
 
-        <GuaranteesExplorer guarantees={guarantees} />
+        <GuaranteesExplorer guarantees={guarantees} financialEntities={financialEntities} />
         </section>
     );
     }

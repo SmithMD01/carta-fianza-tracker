@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { da } from "zod/locales";
 
 const createGuaranteeSchema = z.object({
   projectId: z.string().min(1),
@@ -122,7 +123,7 @@ export async function createGuaranteeAction(
 
 const updateGuaranteeSchema = z.object({
   id: z.string().min(1),
-  insurerName: z.string().trim(),
+  financialEntityId: z.string().trim(),
   guaranteeNumber: z.string().trim(),
   guaranteeReason: z.string().trim().min(1),
   validFrom: z.string().min(1),
@@ -172,6 +173,7 @@ export async function updateGuaranteeAction(
       id: data.id,
     },
     data: {
+      financialEntityId: data.financialEntityId || null,
       guaranteeNumber: data.guaranteeNumber || null,
       guaranteeReason: data.guaranteeReason,
       guaranteeGroups: getGuaranteeGroups(data.guaranteeReason),

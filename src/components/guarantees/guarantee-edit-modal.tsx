@@ -6,14 +6,17 @@ import { getGuaranteeReasonsForOrigin, REQUESTING_AREAS } from "@/config/busines
 import {createPortal} from "react-dom";
 import { useRouter } from "next/navigation";
 import { updateGuaranteeAction } from "@/app/cartas-fianza/actions";
+import type { FinancialEntityOption } from "@/lib/financial-entities/financial-entity-repository";
+import { endsWith } from "zod";
 
 type GuaranteeEditModalProps = {
   guarantee: Guarantee;
+  financialEntities: FinancialEntityOption[];
   menuItem?: boolean;
 };
 
 type EditFormValues = {
-  insurerName: string;
+  financialEntityId: string;
   guaranteeNumber: string;
   guaranteeReason: string;
   validFrom: string;
@@ -35,9 +38,9 @@ type EditFormValues = {
 const inputClassName =
   "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none focus:border-primary";
 
-function createInitialValues(guarantee: Guarantee): EditFormValues {
+function createInitialValues(guarantee: Guarantee, financialEntities: FinancialEntityOption[],): EditFormValues {
   return {
-    insurerName: guarantee.insurerName,
+    financialEntityId: financialEntities.find((entity) => entity.name === guarantee.insurerName,)?.id ?? "",
     guaranteeNumber: guarantee.guaranteeNumber,
     guaranteeReason: guarantee.guaranteeReason,
     validFrom: guarantee.validFrom,
@@ -89,9 +92,9 @@ function EditField({
   );
 }
 
-export function GuaranteeEditModal({ guarantee, menuItem = false }: GuaranteeEditModalProps) {
+export function GuaranteeEditModal({ guarantee, financialEntities, menuItem = false }: GuaranteeEditModalProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [formValues, setFormValues] = useState(() => createInitialValues(guarantee));
+  const [formValues, setFormValues] = useState(() => createInitialValues(guarantee, financialEntities));
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
@@ -122,7 +125,7 @@ export function GuaranteeEditModal({ guarantee, menuItem = false }: GuaranteeEdi
   };
 
   const openModal = () => {
-    setFormValues(createInitialValues(guarantee));
+    setFormValues(createInitialValues(guarantee, financialEntities));
     setIsOpen(true);
   };
 
@@ -139,7 +142,7 @@ export function GuaranteeEditModal({ guarantee, menuItem = false }: GuaranteeEdi
     try {
       await updateGuaranteeAction({
         id: guarantee.id,
-        insurerName: formValues.insurerName,
+        financialEntityId: formValues.financialEntityId,
         guaranteeNumber: formValues.guaranteeNumber,
         guaranteeReason: formValues.guaranteeReason,
         validFrom: formValues.validFrom,
@@ -242,7 +245,27 @@ export function GuaranteeEditModal({ guarantee, menuItem = false }: GuaranteeEdi
                 <section>
                   <h3 className="mb-4 text-sm font-semibold text-primary">Datos editables</h3>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <EditField label="Entidad financiera" value={formValues.insurerName} onChange={(value) => updateField("insurerName", value)} />
+                    <label className="block">
+                      <span className="mb-1 block text-xs font-medium text-muted">
+                        Entidad financiera
+                      </span>
+
+                      <select
+                        value={formValues.financialEntityId}
+                        onChange={(event) =>
+                          updateField("financialEntityId", event.target.value)
+                        }
+                        className={inputClassName}
+                      >
+                        <option value="">Selecciona una entidad financiera</option>
+
+                        {financialEntities.map((entity) => (
+                          <option key={entity.id} value={entity.id}>
+                            {entity.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                     <EditField label="N.° carta fianza" value={formValues.guaranteeNumber} onChange={(value) => updateField("guaranteeNumber", value)} />
                     {canChangeStatus ? (
                       <label className="block">
